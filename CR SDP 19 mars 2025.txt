@@ -1,0 +1,63 @@
+# **Olivier**
+
+## 1. Inscription et Connexion
+
+- Inscription via email avec validation de l'adresse.
+- Connexion sécurisée avec email et mot de passe.
+- Option de réinitialisation du mot de passe.
+
+## 2. Gestion des Salons
+
+- Création de salons avec un nom et des paramètres personnalisables.
+- Possibilité de rejoindre un salon existant via une liste ou un code d'invitation.
+- Système d'invitation par liste d'amis.
+- Invitation par email avec un bouton de redirection vers la table du premier joueur.
+
+## 3. Fonctionnalités en Jeu
+
+- Système de chat disponible pendant la partie (Version 2 avec améliorations).
+
+## 4. Suivi et Récompenses
+
+- Attribution de succès en fonction du nombre de parties jouées.
+- Gestion des membres avec suivi des statistiques (nombre de parties, performances, etc.).
+- Système de récompenses en fonction des succès obtenus.
+
+## 5. Pages Informatives
+
+- Conditions Générales de Vente (CGV) accessibles depuis l'application.
+- Page "À propos" présentant le projet.
+- Formulaire de contact pour toute demande d'assistance ou d'information.
+
+**Taches** 
+
+### **1. Inscription et Connexion**
+
+- 🔹 Implémentation de l'inscription avec validation email.
+- 🔹 Mise en place de la connexion sécurisée.
+- 🔹 Système de réinitialisation du mot de passe.
+
+### **2. Gestion des Salons**
+
+- 🔹 Création de salons avec paramètres personnalisables.
+- 🔹 Affichage d'une liste des salons existants.
+- 🔹 Génération et gestion des codes d’invitation.
+- 🔹 Intégration d’un système d’invitation via liste d’amis.
+- 🔹 Envoi d’invitations par email avec lien de redirection.
+
+### **3. Fonctionnalités en Jeu**
+
+- 🔹 Développement du chat en jeu (Version 1).
+- 🔹 Améliorations du chat en jeu (Version 2).
+
+### **4. Suivi et Récompenses**
+
+- 🔹 Système de succès en fonction du nombre de parties jouées.
+- 🔹 Mise en place du suivi des statistiques des joueurs.
+- 🔹 Implémentation du système de récompenses.
+
+### **5. Pages Informatives**
+
+- 🔹 Création de la page des Conditions Générales de Vente (CGV).
+- 🔹 Mise en place de la page "À propos".
+- 🔹 Développement du formulaire de contact.
