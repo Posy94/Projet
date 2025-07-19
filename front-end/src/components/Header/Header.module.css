@@ -1,0 +1,106 @@
+ul {
+    list-style-type: none;
+}
+
+.burgerButton {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index:1000;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    transition: all 0.2s;
+}
+
+.burgerButton:hover {
+    background: #34495e;
+    transform: scale(1.05);
+}
+
+.slideMenu {
+    position: fixed;
+    top: 0;
+    left: -300px;
+    width: 300px;
+    height: 100vh;
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    transition: left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    z-index: 999;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+    overflow-y: auto;
+}
+
+.slideMenu.open {
+    left: 0;
+}
+
+.menuList {
+    list-style: none;
+    padding: 60px 20px 60px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 40px);
+}
+
+.menuList Li {
+    margin: 10px 0;
+}
+
+.menuList a {
+    color: white;
+    text-decoration: none;
+    padding: 12px 15px;
+    display: block;
+    border-radius: 5px;
+    transition: background 0.2s;
+}
+
+.menuList a:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.5);
+    z-index: 998;
+}
+
+.burgerIcon {
+    width: 25px;
+    height: 20px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.burgerIcon span {
+    width: 100%;
+    height: 3px;
+    background: white;
+    transition: all 0.3s ease;
+    transform-origin: center;
+}
+
+.burgerIcon.active span:nth-child(1) {
+    transform: rotate(45deg) translate(6px, 6px);
+}
+
+.burgerIcon.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.burgerIcon.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(6px, -6px);
+}
+
