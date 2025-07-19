@@ -1,6 +1,56 @@
-ul {
-    list-style-type: none;
+/* HEADER */
+
+.header {
+    position: relative;
+    width: 100%;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 100;
 }
+
+/* MENU DESKTOP */
+
+.desktopMenu {
+    display: none;
+}
+
+.desktopList {
+    list-style: none;
+    padding: 20px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    max-width: 1400px;
+}
+
+.desktopList li {
+    margin: 0;
+}
+
+.desktopList a {
+    color: #2c3e50;
+    text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    transition: all 0.2s;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.desktopList a:hover {
+    background: #2c3e50;
+    color: white;
+}
+
+.desktopList a:active {
+    background: #3498db;
+    color: white;
+}
+
+/* MENU BURGER POUR LES MOBILES */
 
 .burgerButton {
     position: fixed;
@@ -15,12 +65,58 @@ ul {
     cursor: pointer;
     box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     transition: all 0.2s;
+    display: block;
 }
 
 .burgerButton:hover {
     background: #34495e;
     transform: scale(1.05);
 }
+
+/* ICONE BURGER ANIMEE */
+
+.burgerIcon {
+    width: 25px;
+    height: 20px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.burgerIcon span {
+    width: 100%;
+    height: 3px;
+    background: white;
+    transition: all 0.3s ease;
+    transform-origin: center;
+}
+
+.burgerIcon.active span:nth-child(1) {
+    transform: rotate(45deg) translate(6px, 6px);
+}
+
+.burgerIcon.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.burgerIcon.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(6px, -6px);
+}
+
+/* OVERLAY SOMBRE POUR LES MOBILES */
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.5);
+    z-index: 998;
+}
+
+/* MENU COULISSANT POUR LES MOBILES */
 
 .slideMenu {
     position: fixed;
@@ -65,42 +161,66 @@ ul {
     background: rgba(255,255,255,0.1);
 }
 
-.overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0,0,0,0.5);
-    z-index: 998;
+.menuList a:active {
+    background: rgba(255,255,255,0.2);
+    font-weight: bold;
 }
 
-.burgerIcon {
-    width: 25px;
-    height: 20px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+/* MEDIA QUERIES - RESPONSIVE - MOBILE FIRST */
+
+/* TABLETTES - A PARTIR D'UNE LARGEUR DE 768PX */
+
+@media (min-width: 768px) {
+    .desktopMenu {
+        display: block;
+    }
+
+    .burgerButton {
+        display: none;
+    }
+
+    .slideMenu {
+        display: none;
+    }
+
+    .overlay {
+        display: none;
+    }
 }
 
-.burgerIcon span {
-    width: 100%;
-    height: 3px;
-    background: white;
-    transition: all 0.3s ease;
-    transform-origin: center;
+/* DESKTOP - A PARTIR D'UNE LARGEUR de 1200PX */
+
+@media (min-width: 1200px) {
+    .desktopList {
+        gap: 30px;
+        padding: 25px 40px;
+    }
+
+    .desktopList a {
+        padding: 12px 20px;
+        font-size: 16px;
+    }
 }
 
-.burgerIcon.active span:nth-child(1) {
-    transform: rotate(45deg) translate(6px, 6px);
+/* MOBILE - LARGEUR INFERIEURE A 480PX */
+
+@media (max-width: 480px) {
+    .slideMenu {
+        width: 280px;
+    }
+
+    .menuList {
+        padding: 60px 15px 60px;
+    }
+
+    .menuList a {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
 }
 
-.burgerIcon.active span:nth-child(2) {
-    opacity: 0;
-}
 
-.burgerIcon.active span:nth-child(3) {
-    transform: rotate(-45deg) translate(6px, -6px);
-}
+
+
+
 

@@ -12,22 +12,80 @@ const Header = () => {
     };
 
     return (
-        <header>
+        <header className={style.header}>
 
-            {/* BOUTON BURGER */}
+            {/* BOUTON BURGER POUR LES MOBILES */}
 
             <button
                 onClick={toggleMenu}
                 className={style.burgerButton}
             >
+                
                 <div className={`${style.burgerIcon} ${isMenuOpen ? style.active : ''}`}>  
                     <span></span>
                     <span></span>
                     <span></span>
-                </div>             
+                </div> 
+
             </button>
 
-            {/* OVERLAY SOMBRE */}
+            {/* MENU POUR LES DESKTOP */}
+
+            <nav className={style.desktopMenu}>
+
+                <ul className={style.desktopList}>
+
+                    <li>
+                        <NavLink to='/'>
+                            Accueil
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to='/regles'>
+                            Règles du jeu
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to='/inscription'>
+                            Inscription
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to='/profilJoueur'>
+                            Profil du joueur
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to='/connexion'>
+                            Connexion
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to='/creationSalon'>
+                            Création d'un salon
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to='/cgu'>
+                            Conditions générales d'utilisation
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to='/apropos'>
+                            A propos
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to='/contact'>
+                            Contact
+                        </NavLink>
+                    </li>
+
+                </ul>
+
+            </nav>
+
+            {/* OVERLAY SOMBRE POUR LES MOBILES*/}
 
             {isMenuOpen && (
                 <div
@@ -37,7 +95,7 @@ const Header = () => {
                 </div>
             )}
 
-            {/* MENU COULISSANT*/}
+            {/* MENU COULISSANT POUR LES MOBILES */}
 
             <nav className={`${style.slideMenu} ${isMenuOpen ? style.open : ''}`}>
 
@@ -80,7 +138,7 @@ const Header = () => {
                         </li>
                         <li>
                             <NavLink to='/apropos' onClick={toggleMenu}> 
-                                A Propos
+                                A propos
                             </NavLink>
                         </li>
                         <li>
