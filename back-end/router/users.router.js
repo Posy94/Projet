@@ -5,9 +5,14 @@ const router = express.Router();
 const UsersController = require('../controllers/users.controller');
 const verifyToken = require('../middlewares/auth')
 
+//ROUTE D'AUTHENTIFICATION
 router.post('/register', UsersController.register);
-router.get('/all', UsersController.getAllUsers);
-router.get('/get/:id', UsersController.getUserByID);
-router.post('/sign', UsersController.sign);
+router.post('/login', UsersController.login);
+router.post('/logout', UsersController.logout);
+
+//ROUTE PROTEGEES
+router.get('/profile', verifyToken, UsersController,getProfile);
+router.put('/profile', verifyToken, UsersController.updateProfile);
+router.get('/stats', verifyToken, UsersController.getStats);
 
 module.exports = router;

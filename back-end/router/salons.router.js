@@ -1,12 +1,16 @@
 const express = require('express');
 const router = express.Router();
-
+const verifieToken = require('../middlewares/auth');
 const SalonsController = require('../controllers/salons.controller');
 
-router.post("/create", SalonsController.createSalons)
-router.get("/read", SalonsController.readSalons)
-router.get("/detail/:id", SalonsController.detailSalons)
-router.put("/update/:id", SalonsController.updateSalons)
-router.delete("/delete/:id", SalonsController.deleteSalons)
+// ROUTES PUBLIQUES
+router.get("/available", SalonsController.getSalonsLibres);
+router.get("/:salonId", SalonsController.getSalonDetails);
+
+// ROUTES PROTEGEES
+router.post("/create", verifieToken, SalonsController.createSalon);
+router.post("/join/:salonId", verifieToken, SalonsController.joinSalon);
+router.put("/user/my-salons", verifieToken, SalonsController.getUserSalons);
+router.delete("/:salonId", verifieToken, SalonsController.deleteSalon);
 
 module.exports = router

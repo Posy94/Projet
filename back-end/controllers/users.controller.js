@@ -4,80 +4,129 @@ const ENV = require('../config/env');
 
 const UsersModel = require('../models/users.model');
 
-const register = async (req, res) => {
-    try {
-        const passwordHashed = await bcrypt.hash(req.body.password, 10);
+const usersController = {
+    
+    //INSCRIPTION
+    register: async (req, res) => {
+        try {
+            const { username, email, password } = req.body;
 
-        const user = await UsersModel.create({
-            ...req.body,
-            password: passwordHashed
-        })
+            // VERIFIER SI L'UTILSATEUR EXISTE DEJA
+            const existingUser = await UsersModel.findOne({
+                $or: [{ email }, { username}]
+            });
+
+            if (existingUser) {
+                return res.status(400).json({
+                    error: 'Utilisateur ou email existant'
+                });
+            }
+            
+            const passwordHashed = await bcrypt.hash(password, 10);
+            const user = new UsersModel({ username, email, password: passwordHashed });
+            await UsersModel.save();
+
+            const token = jwt.sign({ userId: user._id }, ENV.JWT_SECRET);
+
+            //DEFINITION DU COOKIE
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production'
+            });
 
             res.status(201).json({
-            message:"User created",
-            user
-        })       
-    } catch (error) {
-        console.log(error.message);        
+                message: 'Inscription réussie',
+                token,
+                user: {
+                    id: user._id,
+                    username: user.username,
+                    email: user.email
+                }
+            });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
+    },
+
+    // CONNEXION
+    login: async (req, res) => {
+        try {
+            const { email, password } = req.body;
+            const user = await UsersModel.findOne({ email });
+
+            if(!user || !await bcrypt.compare(password, user.password)) {
+                return res.status(404).json({ error: 'Identifiants invalides' });
+            }
+
+            const token = jwt.sign(
+                { userId: user._id },
+                ENV.JWT_SECRET,
+            );
+
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production'
+            });
+
+            res.json({
+                message: 'Connexion réussie',
+                token,
+                user: {
+                    id:user._id,
+                    username: user.username,
+                    email: user.email,
+                    stats: user.stats
+                }
+            });
+        } catch (error) {
+            res.status(400).json({ error: error.message });        
+        }
+    },
+
+    // DECONNEXION
+    logout: (req, res) => {
+        res.clearCookie('token');
+        res.json({ message: 'Déconnexion réussie' });
+    },
+    
+    // POUR ACCEDER AU PROFIL UTILISATEUR
+    getProfile: async (req, res) => {
+        try {
+            const user = await UsersModel.findByID(req.user.id).select('-password');
+            res.json(user);
+        } catch (error) {
+            res.status(400).json({ error: error.message });        
+        }
+    },
+
+    // MISE A JOUR DU PROFIL UTILISATEUR
+    updateProfile: async (req, res) => {
+        try {
+            const { username, email } = req.body;
+            const user = await UsersModel.findByIdAndUpdate(
+                req.user.id,
+                { username, email },
+                { new: true }
+            ).select('-password');
+
+            res.json({
+                message: 'Profil mis à jour',
+                user
+            });
+        } catch (error) {
+            res.status(400).json({ error: error.message }); 
+        }
+    },
+
+    // VOIR LES STATISTIQUES DES JOUEURS
+    getStats: async (req, res) => {
+        try {
+            const user = await UsersModel.findByID(req.user.id).select('stats username');
+            res.json(user);
+        } catch (error) {
+            res.status(400).json({ error: error.message });
+        }
     }
-}
+};
 
-const getAllUsers = async (req, res) => {
-    try {
-        const users = await UsersModel.find();
-        res.status(200).json(users);
-    } catch (error) {
-        console.log(error.message);        
-    }
-}
-
-const getUserByID = async (req, res) => {
-    try {
-        const users = await UsersModel.findByID(req.params.id);
-        res.status(200).json(users);
-    } catch (error) {
-        console.log(error.message);
-    }
-}
-
-const sign = async (req, res) => {
-    try {
-        const user = await UsersModel.findOne({email: req.body.email});
-
-        if(!user) return res.status(404).json("User not found !")
-
-        const comparePassword = await bcrypt.compare(
-            req.body.password,
-            user.password
-        )
-
-        if(!comparePassword) return res.status(400).json("Wrong Credentials !!!")
-
-        const token = jwt.sign(
-            { id: user._id },
-            ENV.TOKEN_SIGNATURE,
-            { expiresIn: "24" }
-        )
-
-        const { password, ...others } = user._doc
-
-        res.cookie('access_token', token, {
-            httpOnly: true,
-            secure: false,
-            sameSite: 'strict',
-            maxAge: 24 * 60 * 60 * 1000
-        })
-
-        res.status(200).json(others);
-
-    } catch (error) {
-        console.log(error.message);        
-    }
-}
-
-module.exports = {
-    register,
-    getAllUsers,
-    getUserByID,
-    sign
-}
+module.exports = usersController;

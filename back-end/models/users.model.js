@@ -6,7 +6,8 @@ const usersSchema = mongoose.Schema(
             type: String,
             minLength: 2,
             maxLength: 20,
-            require: true
+            require: true,
+            unique: true
         },
         email: {
             type: String,
@@ -30,9 +31,26 @@ const usersSchema = mongoose.Schema(
         isActive: {
             type: Boolean,
             default: true
+        },
+        stats: {
+            gamesPlayed: {
+                type: Number,
+                default: 0
+            },
+            wins: {
+                type: Number,
+                default: 0
+            },
+            losses: {
+                type: Number,
+                default: 0
+            },
+            draws: {
+                type: Number,
+                defaumt: 0
+            }
         }
-    }, 
-    { timestamp: { createAt: true } }
-)
+    }, { timestamp: true }
+);
 
 module.exports = mongoose.model('users', usersSchema)

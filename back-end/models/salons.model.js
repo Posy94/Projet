@@ -1,27 +1,54 @@
 const mongoose = require('mongoose');
 
-const salonsSchema = mongoose.Schema(
+const salonsSchema = new mongoose.Schema(
     {
+        salonId: {
+            type: String,
+            required: true,
+            unique:true
+        },
         name: {
             type: String,
-            minLength: 2,
-            maxLength: 20,
             require: true
         },
-        
         userCreator: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Users",
-            require: true
+            ref: 'Users'
         },
-
-        userInvited: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Users",
-            require: false
+        players: [{
+            user: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref:'Users'
+            },
+            choice: {
+                type: String,
+                enum: ['rock', 'paper', 'scissors', null],
+                default: null
+            },
+            ready: {
+                type: Boolean,
+                default: false
+            }
+        }],
+        maxPlayers: {
+            type: Number,
+            default: 2
+        },
+        status: {
+            type: String,
+            enum: ['waiting', 'playing', 'finished'],
+            default: 'waiting'
+        },
+        currentRound: {
+            type: Number,
+            default: 1
+        },
+        maxRounds: {
+            type: Number,
+            default: 3
         }
     }, 
-    { timestamp: { createAt: true } }
-)
+    { timestamp: true }
+);
 
-module.exports = mongoose.model('salons', salonsSchema)
+module.exports = mongoose.model('salons', salonsSchema);
