@@ -1,9 +1,12 @@
 const http = require('http');
 const socketIo = require('socket.io');
-const app = require('/app');
+const app = require('./app');
 const ENV = require('./config/env');
 
 const server = http.createServer(app);
+
+// PORT
+const PORT = ENV.PORT || 8080;
 
 const io = socketIo(server, {
     cors: {
@@ -14,9 +17,6 @@ const io = socketIo(server, {
 });
 
 require('./socket/gameSocket')(io);
-
-// PORT
-const PORT = ENV.PORT || 8080;
 
 // LISTEN
 app.listen(PORT, () => {

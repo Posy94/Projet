@@ -4,6 +4,8 @@ const ENV = require('./config/env');
 const app = express();
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const { RecompenseDefinition } = require('./models/recompenses.model')
+RecompenseDefinition.initializerRecompensesByDefault();
 
 // IMPORT ROUTER
 const usersRouter = require('./router/users.router');

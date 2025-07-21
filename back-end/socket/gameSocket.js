@@ -1,5 +1,6 @@
 const SalonsModel = require('../models/salons.model');
 const suiviController = require('../controllers/suivis.controller');
+const RecompensesController = require('../controllers/recompenses.controller')
 
 module.exports = (io) => {
     io.on('connection', (socket) => {
@@ -170,6 +171,21 @@ module.exports = (io) => {
                                 message: 'Partie terminée !',
                                 finalResult: calculateFinalWinner(salon)
                         });
+
+                        // METTRE A JOUR STATS ET RECOMPENSES
+                        const updateStatsAndRecompenses = async (winId, loseId, winMovePlayed) => {
+                            try {
+                                const winRecompenses = await RecompensesController.verifieAndUnlockRecompenses(winId);
+                                const loseRecompenses = await RecompensesController.verifieAndUnlockRecompenses(loseId);
+
+                                return {
+                                    winRecompenses,
+                                    loseRecompenses
+                                };
+                            } catch (error) {
+                                console.error('Erreur lors de la mise à jour des récompenses:', error);                                
+                            }
+                        };
                     }
                 }
             } catch (error) {

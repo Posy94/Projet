@@ -1,12 +1,13 @@
-const express = require ('express')
-const router = express.Router()
+const express = require ('express');
+const router = express.Router();
+const RecompensesController = require('../controllers/recompenses.controller');
+const verifieToken = require('../middlewares/auth');
 
-const RecompensesController = require('../controllers/recompenses.controller')
+// ROUTES PUBLIQUES
+router.get('/classement', RecompensesController.getRank);
 
-router.post("/create", RecompensesController.createRecompenses)
-router.get("/read", RecompensesController.readRecompenses)
-router.get("/detail", RecompensesController.detailRecompenses)
-router.put("/update", RecompensesController.updateRecompenses)
-router.delete("/delete", RecompensesController.deleteRecompenses)
+// ROUTES PROTEGEES
+router.get('/user/:userId', verifieToken, RecompensesController.getRecompenseUser);
+router.post('/verifier/:userId', verifieToken, RecompensesController.verifieRecompensesUser);
 
 module.exports = router

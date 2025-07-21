@@ -4,9 +4,9 @@ const mongoose = require('mongoose');
 const recompenseDefinitionSchema = new mongoose.Schema(
     {
         id: {
-        id: String,
-        required: true,
-        unique: true
+            type: String,
+            required: true,
+            unique: true
         },
         name: {
             type: String,
@@ -22,7 +22,7 @@ const recompenseDefinitionSchema = new mongoose.Schema(
             required: true
         },
         icon: {
-            type:String,
+            type: String,
             required: true
         },
         color: {
