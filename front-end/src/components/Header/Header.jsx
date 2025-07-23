@@ -80,6 +80,21 @@ const Header = () => {
                             Contact
                         </NavLink>
                     </li>
+                    <li>
+                        <NavLink to='/listeSalons'>
+                            Liste des Salons
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to='/notifications'>
+                            Notifications
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to='/jeu'>
+                            jeu
+                        </NavLink>
+                    </li>
 
                 </ul>
 

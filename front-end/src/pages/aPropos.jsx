@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import React from "react";
 
 const APropos = () => {
     return (
-        <div>
-            {<h1>A propos</h1>}
-        </div>
+        <>
+            <h1>à propos du jeu</h1>
+            <p>Voici les informations sur le concept du jeu...</p>
+        </>
     );
 };
+
 export default APropos;

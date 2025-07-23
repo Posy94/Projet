@@ -17,14 +17,14 @@ const usersController = {
             });
 
             if (existingUser) {
-                return res.status(400).json({
+                return res.status(409).json({
                     error: 'Utilisateur ou email existant'
                 });
             }
             
             const passwordHashed = await bcrypt.hash(password, 10);
             const user = new UsersModel({ username, email, password: passwordHashed });
-            await UsersModel.save();
+            await user.save();
 
             const token = jwt.sign({ userId: user._id }, ENV.JWT_SECRET);
 
@@ -61,6 +61,7 @@ const usersController = {
             const token = jwt.sign(
                 { userId: user._id },
                 ENV.JWT_SECRET,
+                { expiresIn: "2h" }
             );
 
             res.cookie('token', token, {
@@ -92,7 +93,7 @@ const usersController = {
     // POUR ACCEDER AU PROFIL UTILISATEUR
     getProfile: async (req, res) => {
         try {
-            const user = await UsersModel.findByID(req.user.id).select('-password');
+            const user = await UsersModel.findById(req.user.id).select('-password');
             res.json(user);
         } catch (error) {
             res.status(400).json({ error: error.message });        
@@ -121,7 +122,7 @@ const usersController = {
     // VOIR LES STATISTIQUES DES JOUEURS
     getStats: async (req, res) => {
         try {
-            const user = await UsersModel.findByID(req.user.id).select('stats username');
+            const user = await UsersModel.findById(req.user.id).select('stats username');
             res.json(user);
         } catch (error) {
             res.status(400).json({ error: error.message });
