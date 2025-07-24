@@ -37,25 +37,28 @@ const salonController = {
             const { salonId } = req.params;
             const salon = await SalonsModel.findOne({ salonId }).populate('players.user creator');
 
-            if (!SalonsModel) {
+            if (!salon) {
                 return res.status(404).json({ error: 'Salon introuvable' });
             }
 
-            if (SalonsModel.players.length >= SalonsModel.maxPlayers) {
+            if (salon.participants.length >= salon.maxParticipants) {
                 return res.status(400).json({ error: 'Salon complet' });
             }
 
             // VERIFIER SI LE JOUEUR EST DEJA DANS LE SALON
-            const isAlreadyInSalon = salon.players.some(
-                player => player.user._id.toString() === req.user.id
+            const isAlreadyInSalon = salon.participants.some(
+                participant => participant._id.toString() === req.user.id
             );
 
             if (isAlreadyInSalon) {
                 return res.status(400).json({ error: 'Vous êtes déjà dans ce salon' });
             }
 
+            salon.particpants.push(req.user.id);
+            await salon.save();
+
             res.json({
-                message: 'Salon trouvé',
+                message: 'Vous avez rejoint le salon',
                 salon
             })
 
@@ -101,10 +104,22 @@ const salonController = {
     // LES SALONS
     getAllSalons: async (req, res) => {
         try {
-            const salons = await SalonsModel.find();
-            res.status(200).json(salons);
+            const salons = await SalonsModel.find()
+                .populate('userCreator', 'username')
+                .populate('players.user', 'username')
+                .sort({ createdAt: -1 });
+
+            res.status(200).json({
+                success: true,
+                salons: salons
+            });
         } catch (error) {
-            res.status(500).json({ message: "Erreur serveur", error: error.message });
+            console.error('Erreur getAllSalons:', error);            
+            res.status(500).json({
+                success: false,
+                message: "Erreur serveur",
+                error: error.message
+            });
         }
     },
 

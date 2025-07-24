@@ -12,7 +12,7 @@ function ListeSalons() {
         const response = await fetch("http://localhost:8000/api/salons");
         if (!response.ok) throw new Error("Erreur lors du chargement des salons")
         const data = await response.json();
-        setSalon(data);
+        setSalon(data.salons);
       } catch (err) {
         setError(err.message);
       } finally {
