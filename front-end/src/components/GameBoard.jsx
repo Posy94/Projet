@@ -7,7 +7,7 @@ const GameBoard = ({ items, onItemClick, columns = 4 }) => {
         <div
             className={`grid gap-4 p-4`}
             style={{
-                gridTemplateColumns: `repeat(${coluimns}, minmax(0, 1fr))`,
+                gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
             }}
         >
             {items.map((item, index) => (
@@ -25,7 +25,7 @@ const GameBoard = ({ items, onItemClick, columns = 4 }) => {
 
 GameBoard.propTypes = {
     items: PropTypes.arrayOf(
-        propTypes.shape({
+        PropTypes.shape({
             label: PropTypes.string.isRequired,
             selected: PropTypes.bool,
             disabled: PropTypes.bool,

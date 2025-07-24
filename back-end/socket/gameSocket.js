@@ -15,7 +15,7 @@ module.exports = (io) => {
                     return socket.emit('error', 'Salon introuvable');
                 }
 
-                if (salon.players.length >= recompensesModel.maxPlayers) {
+                if (salon.players.length >= salon.maxPlayers) {
                     return socket.emit('error', 'Salon complet');
                 }
 
@@ -193,6 +193,26 @@ module.exports = (io) => {
             }
         });
 
+        // CHAT EN TEMPS REEL
+        socket.on('chatMessage', async ({ salonId, userId, username, message }) => {
+            try {
+                const time = new Date().toISOString();
+                const chatPayload = {
+                    userId,
+                    username,
+                    message,
+                    time
+                };
+
+                // EMETTRE LE MESSAGE DANS LE SALON
+                io.to(salonId).emit('chatMessage', chatPayload);
+
+                console.log(`[Chat][${salonId}] ${username}: ${message}`);
+            } catch (error) {
+                socket.emit('error', error.message);
+            }
+        });
+
         // QUITTER UN SALON
         socket.on('leaveSalon', async ({ salonId, userId }) => {
             try {
@@ -204,7 +224,7 @@ module.exports = (io) => {
                     socket.leave(salonId);
 
                     const updatedSalon = await SalonsModel.findOne({ salonId }).populate('players.user');
-                    io.to(salonId.emit('salonUpdated', updatedSalon));
+                    io.to(salonId).emit('salonUpdated', updatedSalon);
 
                     console.log(`Utilisateur ${userId} a quitté le salon ${salonId}`);
                 }

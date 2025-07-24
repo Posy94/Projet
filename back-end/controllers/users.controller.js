@@ -26,8 +26,7 @@ const usersController = {
             const user = new UsersModel({ username, email, password: passwordHashed });
             await user.save();
 
-            const token = jwt.sign({ userId: user._id }, ENV.JWT_SECRET);
-
+            const token = jwt.sign({ userId: user._id }, ENV.TOKEN_SIGNATURE, { expiresIn: '2h' });
             //DEFINITION DU COOKIE
             res.cookie('token', token, {
                 httpOnly: true,
@@ -50,6 +49,7 @@ const usersController = {
 
     // CONNEXION
     login: async (req, res) => {
+
         try {
             const { email, password } = req.body;
             const user = await UsersModel.findOne({ email });
@@ -60,7 +60,7 @@ const usersController = {
 
             const token = jwt.sign(
                 { userId: user._id },
-                ENV.JWT_SECRET,
+                ENV.TOKEN_SIGNATURE,
                 { expiresIn: "2h" }
             );
 
@@ -80,6 +80,7 @@ const usersController = {
                 }
             });
         } catch (error) {
+            console.error("🔥 Erreur dans login :", error.message);
             res.status(400).json({ error: error.message });        
         }
     },

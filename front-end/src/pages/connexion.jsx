@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form"
+import axios from 'axios';
 
 function Connexion({ setUser }) {
     const {
@@ -10,8 +11,9 @@ function Connexion({ setUser }) {
 
     const onSubmit = async (data) => {
         try {
+            console.log("Données envoyées :", data);
             const response = await axios.post(
-                "http://localhost:5000/api/users/login",
+                "http://localhost:8000/api/user/login",
                 data,
                 { withCredentials: true,}
             );
@@ -22,9 +24,13 @@ function Connexion({ setUser }) {
 
             window.location.href = "/listeSalons";
         } catch (error) {
-            console.error("Erreur :", error.message);
-            alert(error.message || "Erreur de connexion");
-        }    
+            console.error("Erreur complète :", error.response);
+            if (error.response?.data?.message) {
+                alert(error.response.data.message);
+            } else {
+                alert(error.message || "Erreur de connexion");
+            }
+        }  
     };
 
     return (

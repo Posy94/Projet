@@ -9,16 +9,16 @@ const salonsSchema = new mongoose.Schema(
         },
         name: {
             type: String,
-            require: true
+            required: true
         },
         userCreator: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Users'
+            ref: 'users'
         },
         players: [{
             user: {
                 type: mongoose.Schema.Types.ObjectId,
-                ref:'Users'
+                ref:'users'
             },
             choice: {
                 type: String,
@@ -28,7 +28,8 @@ const salonsSchema = new mongoose.Schema(
             ready: {
                 type: Boolean,
                 default: false
-            }
+            },
+            socketId: String
         }],
         maxPlayers: {
             type: Number,
@@ -46,9 +47,23 @@ const salonsSchema = new mongoose.Schema(
         maxRounds: {
             type: Number,
             default: 3
-        }
-    }, 
-    { timestamp: true }
+        },
+        roundStartTime: {
+            type: Date,
+            default: null
+        },
+        scores: [{
+            user: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'users'
+            },
+            wins: {
+                type: Number,
+                default: 0
+            }
+        }]
+    },
+    { timestamps: true }
 );
 
 module.exports = mongoose.model('salons', salonsSchema);

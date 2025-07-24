@@ -1,5 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { useState } from "react";
+import axios from 'axios';
 
 function Inscription({ setUser }) {
     const {
@@ -9,10 +11,17 @@ function Inscription({ setUser }) {
         formState: { errors },
     } = useForm();
 
+    const [error, setError] = useState('');
+    const [isLoading, setIsloading] = useState(false);
+    const navigate = useNavigate();
+
     const onSubmit = async (data) => {
+        setError('');
+        setIsloading(true);
+
         try {
             const response = await axios.post(
-                "http://localhost:5000/api/users/register",
+                "http://localhost:8000/api/user/register",
                 {
                     username: data.pseudo,
                     email: data.email,
@@ -21,19 +30,47 @@ function Inscription({ setUser }) {
                 { withCredentials: true }
             );
 
-            const result = await response.json();
-
-            setUser(result.user);
-            window.location.href = "/listeSalons";
+            console.log('Inscription réussie', response.data);
+            setUser(response.data.user);
+            navigate("/ListeSalons");
+            
         } catch (error) {
-            console.error("Erreur :", error.message);
-            alert(error.message || "Erreur d'inscription")
+            console.error("Erreur complète:", error);
+            console.error("Status :", error.response?.status);
+            console.error("Data :", error.response?.data);
+            
+            if (error.response) {
+                const status = error.response.status;
+                const errorMessage = error.response.data?.message || error.response.data?.error;
+
+                if (status === 409) {
+                    setError("Cet email ou nom d'utilisateur est déjà utilisé. Veuillez en choisir un autre.");
+                } else if (status === 400) {
+                    setError("Données invalides. Vérifiez vos informations.");
+                } else {
+                    setError(errorMessage || "Erreur lors de l'inscription");
+                }
+            } else if (error.request) {
+                setError("Erreur de connexion au serveur. Vérifiez votre connexion");
+            } else {
+                setError("Une erreur inattendue s'est produite.");
+            }
+        } finally {
+            setIsloading(false);
         }
     };
 
     return (
         <div className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md mt-10">
             <h2 className="text-2xl font-bold mb-4 text-center">Inscription</h2>
+
+            {/* Affichage de l'erreur */}
+            {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                    {error}
+                </div>
+            )}
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div>
                     <input

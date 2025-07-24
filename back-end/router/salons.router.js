@@ -4,6 +4,7 @@ const verifieToken = require('../middlewares/auth');
 const SalonsController = require('../controllers/salons.controller');
 
 // ROUTES PUBLIQUES
+router.get('/', SalonsController.getAllSalons);
 router.get("/available", SalonsController.getSalonsLibres);
 router.get("/:salonId", SalonsController.getSalonDetails);
 

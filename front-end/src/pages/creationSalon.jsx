@@ -17,34 +17,31 @@ function CreationSalon() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const salonToCreate = {
-            name: form.name,
-            maxPlayers: parseInt(form.maxPlayers),
-            maxRounds: parseInt(form.maxRounds),
-        };
-
         try {
-            const response = await fetch("http://localhost:27017/api/salons", {
+            const response = await fetch("http://localhost:8000/api/salons/create", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify(salonToCreate),
+                credentials:'include',
+                body: JSON.stringify(form),
             });
 
-            if (!response.ok) throw new Error("Erreur lors de la création du salon");
-
-            const result = await response.json();
-            setMessage(`Salon "${result.name}" créé avec succès !`);
-            setForm({ name: "", maxPlayers: 2, maxRounds: 3 });
+            if (response.ok) {
+                const data = await response.json();
+                console.log("✅ Salon créé avec succès :", data);
+            } else {
+                const errorData = await response.json();
+                console.error("❌ Erreur serveur :", response.status, errorData);                
+            }
         } catch (error) {
-            setMessage("Erreur :" + error.message);
+            setMessage("❌ Erreur réseau :", error);
         }
     };
 
     return (
         <div className="max-w-md mx-auto p-6 bg-white rounded shadow mt-10">
-            <h2 className="text-xl font-bold mb-4 text-center">Créer unsalon</h2>
+            <h2 className="text-xl font-bold mb-4 text-center">Créer un salon</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <input
                     className="w-full border px-4 py-2 rounded"

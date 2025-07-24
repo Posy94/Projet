@@ -2,15 +2,15 @@ const http = require('http');
 const socketIo = require('socket.io');
 const app = require('./app');
 const ENV = require('./config/env');
+const connectMongoDB = require('./config/db')
+
+connectMongoDB();
 
 const server = http.createServer(app);
 
-// PORT
-const PORT = ENV.PORT || 8080;
-
 const io = socketIo(server, {
     cors: {
-        origin: `http://localhost:${PORT}`,
+        origin: ENV.PORT_APPLICATION_FRONT,
         methods: ["GET", "POST"],
         credentials: true
     }
@@ -18,14 +18,9 @@ const io = socketIo(server, {
 
 require('./socket/gameSocket')(io);
 
+// PORT
+const PORT = ENV.PORT || 8080;
 // LISTEN
-app.listen(PORT, () => {
-    console.log(`Serveur démarré sur le port:${PORT}`);
+server.listen(PORT, () => {
+    console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
 })
-
-// // MIDDLEWARE
-// app.use(cors())
-// app.use(express.json());
-
-// // CONNEXION A MONGODB
-// mongoose.connect('mongo')

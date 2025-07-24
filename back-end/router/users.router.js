@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
+const ENV = require('../config/env')
+const jwt = ('jsonwebtoken');
+
 // IMPORT DU CONTROLLEUR
 const UsersController = require('../controllers/users.controller');
 const verifieToken = require('../middlewares/auth')

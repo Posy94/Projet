@@ -12,18 +12,20 @@ const salonController = {
             const salon = new SalonsModel({
                 salonId,
                 name,
-                creator: req.user.id,
+                userCreator: req.user.id,
                 maxRounds: maxRounds || 3,
                 isPrivate: isPrivate || false
             });
 
-            await salon.save();
-            await salon.populate('creator', 'username');
+            const savedSalon = await salon.save();
+            const populatedSalon = await SalonsModel.findById(savedSalon._id)
+                .populate('userCreator', 'username');
 
             res.status(201).json({
                 message: 'Salon créé avec succés',
-                salon
+                salon: populatedSalon
             });
+
         } catch (error) {
             res.status(400).json({ error: error.message })
         }
@@ -93,6 +95,16 @@ const salonController = {
             res.json(salon);
         } catch (error) {
             res.status(400).json({ error: error.message });
+        }
+    },
+
+    // LES SALONS
+    getAllSalons: async (req, res) => {
+        try {
+            const salons = await SalonsModel.find();
+            res.status(200).json(salons);
+        } catch (error) {
+            res.status(500).json({ message: "Erreur serveur", error: error.message });
         }
     },
 
