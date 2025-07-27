@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router';
 
 //COMPONENTS & PAGES
 import Layout from './components/Layout/Layout';
@@ -30,10 +31,17 @@ function App() {
   const [user,setUser] = useState(null);
 
   useEffect(() => {
-    axios.get('http.//localhost:3000/api/users/getProfile', { withCredentials: true })
-      .then((res) => setUser(res.data))
-      .catch(() => setUser(null));
-  }, []);
+  axios.get('http://localhost:8000/api/users/getProfile', { withCredentials: true })
+    .then((res) => {
+      console.log('✅ Données reçues:', res.data);
+      setUser(res.data);
+    })
+    .catch((error) => {
+      console.error('❌ Erreur:', error.response?.data || error.message);
+      setUser(null);
+    });
+}, []);
+
 
   return (
     <Routes>
@@ -54,6 +62,12 @@ function App() {
         <Route path='/listeSalons' element={<ListeSalons/>}/>
         <Route path='/salon' element={<Salon/>}/>
         {/* JEU */}
+        <Route path='/jeu' element={<div className="text-center mt-10">
+  <h2>Sélectionnez un salon pour jouer</h2>
+  <Link to="/listeSalons" className="text-blue-500 underline">
+    Voir la liste des salons
+  </Link>
+</div>}/>
         <Route path='/jeu/:salonId' element={<Jeu user={user}/>}/>
         {/* CONTENU POST-JEU */}
         <Route path='/amis' element={<Amis/>}/>

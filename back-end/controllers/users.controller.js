@@ -93,13 +93,26 @@ const usersController = {
     
     // POUR ACCEDER AU PROFIL UTILISATEUR
     getProfile: async (req, res) => {
+        
         try {
-            const user = await UsersModel.findById(req.user.id).select('-password');
+            console.log('🔥 getProfile MongoDB appelé !');
+            
+            // Test connexion + récupération des données
+            const user = await UsersModel.findOne().select('username email stats');
+            
+            if (!user) {
+                return res.status(404).json({ error: "Aucun utilisateur trouvé" });
+            }
+            
+            console.log('✅ User trouvé dans MongoDB:', user);
             res.json(user);
+            
         } catch (error) {
-            res.status(400).json({ error: error.message });        
+            console.error('❌ Erreur MongoDB:', error);
+            res.status(400).json({ error: error.message });
         }
     },
+
 
     // MISE A JOUR DU PROFIL UTILISATEUR
     updateProfile: async (req, res) => {

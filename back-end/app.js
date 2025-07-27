@@ -29,7 +29,7 @@ app.use(cors({
 }));
 
 // URL API (PREFIXES)
-app.use("/api/user", usersRouter);
+app.use("/api/users", usersRouter);
 app.use("/api/salons", salonsRouter);
 app.use("/api/recompenses", recompensesRouter);
 app.use("/api/suivis", suivisRouter);

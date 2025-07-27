@@ -3,10 +3,18 @@ import { useParams } from 'react-router-dom';
 import io from "socket.io-client";
 import useUser from '../hooks/useUser';
 
-const socket = io("http://localhost:5173");
+const socket = io("http://localhost:8000");
 
 const Jeu = () => {
   const user = useUser();
+
+  const { salonId } = useParams();
+  const [salon, setSalon] = useState(null);
+  const [gameStatus, setGameStatus] = useState("waiting");
+  const [isReady, setIsReady] = useState(false);
+  const [hasChosen, setHasChosen] = useState(false);
+  const [choice, setChoice] = useState(null);
+  const [roundResult, setRoundResult] = useState(null);
 
   useEffect(() => {
     if (!user) return;
