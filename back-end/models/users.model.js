@@ -6,18 +6,19 @@ const usersSchema = mongoose.Schema(
             type: String,
             minLength: 2,
             maxLength: 20,
-            require: true,
+            required: true,
             unique: true
         },
         email: {
             type: String,
-            require: true,
+            required: true,
             unique: true
         },
         password: {
             type: String,
             // minLength: 12,
-            require: true,
+            required: true,
+            select: false
         },
         role: {
             type: String,
@@ -47,10 +48,10 @@ const usersSchema = mongoose.Schema(
             },
             draws: {
                 type: Number,
-                defaumt: 0
+                default: 0
             }
         }
-    }, { timestamp: true }
+    }, { timestamps: true }
 );
 
 module.exports = mongoose.model('users', usersSchema)

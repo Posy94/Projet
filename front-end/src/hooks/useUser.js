@@ -2,13 +2,32 @@ import { useState, useEffect } from "react";
 
 export default function useUser() {
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
+        try {
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
+                setUser(userData);
+            }
+        } catch (error) {
+            console.error('Erreur parsing user localStorage:', error);
+            localStorage.removeItem("user");
+        } finally {
+            setLoading(false);
         }
     }, []);
 
-    return user;
+    // FONCTION POUR METTRE A JOUR L'UTILISATEUR
+    const updateUser = (newUserData) => {
+        setUser(newUserData);
+        if (newUserData) {
+            localStorage.setItem("user", JSON.stringify(newUserData));
+        } else {
+            localStorage.removeItem("user");
+        }
+    };
+
+    return { user, loading, updateUser };
 }

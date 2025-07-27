@@ -2,7 +2,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const app = require('./app');
 const ENV = require('./config/env');
-const connectMongoDB = require('./config/db')
+const connectMongoDB = require('./config/db');
 
 connectMongoDB();
 
