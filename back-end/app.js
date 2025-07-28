@@ -8,7 +8,7 @@ const { RecompenseDefinition } = require('./models/recompenses.model')
 RecompenseDefinition.initializerRecompensesByDefault();
 
 // IMPORT ROUTER
-const usersRouter = require('./router/users.router');
+// const usersRouter = require('./router/users.router');
 const salonsRouter = require('./router/salons.router');
 const recompensesRouter = require('./router/recompenses.router');
 const suivisRouter = require('./router/suivis.router');
@@ -30,7 +30,7 @@ app.use(cors({
 }));
 
 // URL API (PREFIXES)
-app.use("/api/users", usersRouter);
+// app.use("/api/users", usersRouter);
 app.use("/api/salons", salonsRouter);
 app.use("/api/recompenses", recompensesRouter);
 app.use("/api/suivis", suivisRouter);

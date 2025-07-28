@@ -13,7 +13,7 @@ function Connexion({ setUser }) {
         try {
             console.log("Données envoyées :", data);
             const response = await axios.post(
-                "http://localhost:8000/api/user/login",
+                "http://localhost:8000/api/auth/login",
                 data,
                 { withCredentials: true,}
             );

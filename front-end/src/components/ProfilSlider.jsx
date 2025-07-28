@@ -153,7 +153,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
 
             {/* Slider Panel */}
             <div 
-                className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 overflow-y-auto ${
+                className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[9999] transform transition-transform duration-300 overflow-y-auto ${
                     isOpen ? 'translate-x-0' : 'translate-x-full'
                 }`}
             >

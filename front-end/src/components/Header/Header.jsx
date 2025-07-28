@@ -1,4 +1,4 @@
-import React, { useState, usestate } from "react";
+import React, { useState } from "react";
 import { NavLink } from "react-router";
 import useUser from "../../hooks/useUser";
 import ProfilSlider from '../ProfilSlider';
@@ -49,10 +49,10 @@ const Header = () => {
 
                 </button>
 
-                {/* BOUTON PROFIL UTILISATEUR SI CONNECTE */}
+                {/* BOUTON PROFIL */}
 
                 {user && (
-                    <div className={style.userSection}>
+                    <div className={`${style.userSection} fixed top-2 right-4 z-[2000] shadow-lg transition-transform duration-300 hover:scale-105 pointer-events-auto bg-blue-500 rounded-full p-2 sm:top-1 sm:right-2 md:top-2 md:right-6`}>
                         <button
                             onClick={toggleProfile}
                             className={style.profileButton}
@@ -233,12 +233,15 @@ const Header = () => {
             {/* PROFIL GLISSANT */}
 
             {user && (
-                <ProfilSlider
-                    isOpen={isProfilOpen}
-                    onClose={() => setIsProfilOpen(false)}
-                    user={user}
-                    updateUser={updateUser}
-                />
+                <div className={`fixed top-0 right-0 h-screen w-full max-w-md bg-white shadow-2xl z-[9999] transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+                    isProfilOpen ? 'translate-x-0' : 'translate-x-full'
+                }`}>
+                    <ProfilSlider 
+                        onClose={() => setIsProfilOpen(false)} 
+                        user={user}
+                        updateUser={updateUser}
+                    />
+                </div>
             )}
         </>
     )
