@@ -2,6 +2,8 @@ const UsersModel = require('../models/users.model');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const createError = require('../middlewares/error');
+const emailServices = require('../services/emailServices');
+const usersModel = require('../models/users.model');
 
 // Générer JWT Token avec TON nom de cookie
 const generateToken = (userId) => {
@@ -11,8 +13,6 @@ const generateToken = (userId) => {
 module.exports.register = async (req, res, next) => {
     try {
         const { username, email, password } = req.body;
-        
-        console.log('📝 Tentative d\'inscription:', { username, email });
         
         // Vérification des champs requis
         if (!username || !email || !password) {
@@ -32,34 +32,74 @@ module.exports.register = async (req, res, next) => {
         const hashedPassword = await bcrypt.hash(password, 12);
         
         // Créer user
-        const user = await UsersModel.create({
-            username,
-            email,
+        // const user = await UsersModel.create({
+        //     username,
+        //     email,
+        //     password: hashedPassword,
+        //     stats: { gamesPlayed: 0, wins: 0, losses: 0 }
+        // });
+        
+        // GENERER TOKEN D'ACTIVATION
+        const activationToken = emailServices.generateActivationToken();
+        const activationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        // CREATION DE L'UTILISATEUR (NON ACTIVE)
+        const user = new usersModel({
+            username: username.trim(),
+            email: email.toLowerCase().trim(),
             password: hashedPassword,
-            stats: { gamesPlayed: 0, wins: 0, losses: 0 }
+            isActivated: false,
+            activationToken,
+            activationTokenExpires: activationExpires
         });
+
+        await user.save();
+        console.log('✅ Utilisateur créé (non activé):', email);
         
-        // Générer token
-        const token = generateToken(user._id);
+        // ENVOYER EMAIL D'ACTIVATION
+        try {
+            await emailServices.sendActivationEmail(user.email, activationToken);
+
+            res.status(201).json({
+                success: true,
+                message: `📧 Inscription réussie ! Un email d'activation a été envoyé à ${email}. Vérifiez votre boîte mail (et vos spams).`,
+                user: {
+                    id: user._id,
+                    username: user.username,
+                    email: user.email,
+                    isActivated: user.isActivated
+                }
+            });
+        } catch (emailError) {
+            console.error('❌ Erreur envoi email:', emailError);
+
+            await UsersModel.findByIdAndDelete(user._id);
+
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de l\'envoi de l\'email d\'activation. Veuillez réessayer.'
+            });
+        }
+
+        // // Générer token
+        // const token = generateToken(user._id);
         
-        // Cookie avec TON nom "token"
-        res.cookie('token', token, {
-            httpOnly: true,
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
-            sameSite: 'lax'
-        });
+        // // Cookie avec TON nom "token"
+        // res.cookie('token', token, {
+        //     httpOnly: true,
+        //     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
+        //     sameSite: 'lax'
+        // });
         
-        console.log('✅ User créé:', user.username);
-        
-        res.status(201).json({
-            message: 'Inscription réussie',
-            user: {
-                id: user._id,
-                username: user.username,
-                email: user.email,
-                stats: user.stats
-            }
-        });
+        // res.status(201).json({
+        //     message: 'Inscription réussie',
+        //     user: {
+        //         id: user._id,
+        //         username: user.username,
+        //         email: user.email,
+        //         stats: user.stats
+        //     }
+        // });
         
     } catch (error) {
         console.error('❌ Erreur inscription:', error);
@@ -70,26 +110,51 @@ module.exports.register = async (req, res, next) => {
 module.exports.login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        
-        console.log('🔑 Tentative de connexion:', email);
+
+        console.log('🔍 LOGIN ATTEMPT:', { email, password: password ? 'PROVIDED' : 'MISSING' });
         
         if (!email || !password) {
+            console.log('❌ Missing email or password');
             return next(createError(400, 'Email et mot de passe requis'));
         }
         
         // Trouver user avec password
         const user = await UsersModel.findOne({ email }).select('+password');
+        console.log('👤 USER FOUND:', user ? {
+            id: user._id,
+            email: user.email,
+            username: user.username,
+            isActivated: user.isActivated,
+            hasPassword: !!user.password
+        } : 'NO USER FOUND');
         
         if (!user) {
+            console.log('❌ User not found');
             return next(createError(400, 'Email ou mot de passe incorrect'));
+        }
+
+        // VERIFIER SI LE COMPTE EST ACTIVE
+        if (!user.isActivated) {
+            console.log('❌ Account not activated');
+            return res.status(403).json({
+                success: false,
+                message: '⚠️ Votre compte n\'est pas encore activé. Vérifiez votre boîte mail et cliquez sur le lien d\'activation.',
+                needsActivation: true,
+                email: user.email
+            })
         }
         
         // Vérifier password
+        console.log('🔐 Comparing password...');
         const isPasswordValid = await bcrypt.compare(password, user.password);
-        
+        console.log('🔐 Password valid:', isPasswordValid);
+
         if (!isPasswordValid) {
+            console.log('❌ Invalid password');
             return next(createError(400, 'Email ou mot de passe incorrect'));
         }
+
+        console.log('✅ LOGIN SUCCESS');
         
         // Générer token
         const token = generateToken(user._id);
@@ -100,17 +165,23 @@ module.exports.login = async (req, res, next) => {
             maxAge: 7 * 24 * 60 * 60 * 1000,
             sameSite: 'lax'
         });
-        
-        console.log('✅ Connexion réussie:', user.username);
-        
+
+        // METTRE A JOUR lastLogin
+        user.updatedAt = new Date();
+        await user.save();
+               
         res.json({
+            success: true,
             message: 'Connexion réussie',
+            token,
             user: {
                 id: user._id,
                 username: user.username,
                 email: user.email,
-                stats: user.stats
-            }
+                stats: user.stats,
+                isActivated: user.isActivated
+            },
+            token
         });
         
     } catch (error) {
@@ -120,15 +191,30 @@ module.exports.login = async (req, res, next) => {
 };
 
 module.exports.logout = (req, res) => {
-    console.log('👋 Déconnexion utilisateur');
-    res.clearCookie('token');
-    res.json({ message: 'Déconnexion réussie' });
+    try {
+        
+        // 🍪 Supprime le cookie avec les mêmes options que la création
+        res.clearCookie('token', {
+            httpOnly: true,
+            sameSite: 'lax'
+        });
+        
+        res.status(200).json({ 
+            success: true,
+            message: 'Déconnexion réussie' 
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la déconnexion'
+        });
+    }
 };
 
 module.exports.getProfile = async (req, res, next) => {
     try {
-        console.log('👤 Récupération profil pour ID:', req.user.id);
-        
+       
         const user = await UsersModel.findById(req.user.id);
         
         if (!user) {
@@ -142,7 +228,6 @@ module.exports.getProfile = async (req, res, next) => {
             stats: user.stats
         });
     } catch (error) {
-        console.error('❌ Erreur profil:', error);
         next(createError(500, error.message));
     }
 };
@@ -150,9 +235,7 @@ module.exports.getProfile = async (req, res, next) => {
 module.exports.updateProfile = async (req, res, next) => {
     try {
         const { username, email, bio } = req.body;
-        
-        console.log('📝 Mise à jour profil pour:', req.user.id);
-        
+               
         // Vérifier si username/email pas déjà pris par un autre user
         if (username || email) {
             const existingUser = await UsersModel.findOne({
@@ -172,9 +255,7 @@ module.exports.updateProfile = async (req, res, next) => {
             { username, email, bio, updatedAt: new Date() },
             { new: true }
         );
-
-        console.log('✅ Profil mis à jour:', updatedUser.username);
-        
+       
         res.json({ 
             message: 'Profil mis à jour avec succès', 
             user: {
@@ -186,7 +267,6 @@ module.exports.updateProfile = async (req, res, next) => {
             }
         });
     } catch (error) {
-        console.error('❌ Erreur mise à jour profil:', error);
         next(createError(500, error.message));
     }
 };
@@ -194,16 +274,12 @@ module.exports.updateProfile = async (req, res, next) => {
 module.exports.updateAvatar = async (req, res, next) => {
     try {
         const { avatar } = req.body;
-        
-        console.log('🖼️ Mise à jour avatar pour:', req.user.id);
-        
+               
         const updatedUser = await UsersModel.findByIdAndUpdate(
             req.user.id,
             { avatar, updatedAt: new Date() },
             { new: true }
         );
-
-        console.log('✅ Avatar mis à jour');
         
         res.json({ 
             message: 'Avatar mis à jour avec succès', 
@@ -216,7 +292,6 @@ module.exports.updateAvatar = async (req, res, next) => {
             }
         });
     } catch (error) {
-        console.error('❌ Erreur mise à jour avatar:', error);
         next(createError(500, error.message));
     }
 };
@@ -224,9 +299,7 @@ module.exports.updateAvatar = async (req, res, next) => {
 module.exports.changePassword = async (req, res, next) => {
     try {
         const { currentPassword, newPassword } = req.body;
-        
-        console.log('🔐 Changement mot de passe pour:', req.user.id);
-        
+                
         if (!currentPassword || !newPassword) {
             return next(createError(400, 'Mot de passe actuel et nouveau requis'));
         }
@@ -247,19 +320,15 @@ module.exports.changePassword = async (req, res, next) => {
             password: hashedPassword,
             updatedAt: new Date()
         });
-
-        console.log('✅ Mot de passe changé avec succès');
         
         res.json({ message: 'Mot de passe modifié avec succès' });
     } catch (error) {
-        console.error('❌ Erreur changement mot de passe:', error);
         next(createError(500, error.message));
     }
 };
 
 module.exports.getStats = async (req, res, next) => {
     try {
-        console.log('📊 Récupération stats pour:', req.user.id);
         
         const user = await UsersModel.findById(req.user.id);
         
@@ -276,8 +345,102 @@ module.exports.getStats = async (req, res, next) => {
 
         res.json(stats);
     } catch (error) {
-        console.error('❌ Erreur récupération stats:', error);
         next(createError(500, error.message));
     }
 };
+
+module.exports.activateAccount = async (req, res) => {
+    try {
+        const { token } = req.params;
+
+        console.log('🔍 Tentative d\'activation avec token:', token);
+
+        // TROUVER L'UTILISATEUR AVEC CE TOKEN
+        const user =await UsersModel.findOne({
+            activationToken: token,
+            activationTokenExpires: { $gt: Date.now() } // Token non expiré
+        });
+
+        if (!user) {
+            console.log('❌ Token invalide ou expiré:', token);
+            return res.status(400).json({
+                success: false,
+                message: '❌ Token d\'activation invalide ou expiré'
+            });
+        }
+
+        // ACTIVER L'UTILISATEUR
+        user.isActivated = true;
+        user.activationToken = null;
+        user.activationTokenExpires = null;
+        user.updatedAt = new Date();
+
+        await user.save();
+
+        console.log('✅ Compte activé pour:', user.email);
+
+        res.json({
+            success: true,
+            message: `🎉 Compte activé avec succès ! Vous pouvez maintenant vous connecter.`,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                isActivated: user.isActivated
+            }
+        });       
+    } catch (error) {
+        console.error('❌ Erreur activation:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur serveur lors de l\'activation'
+        });
+    }
+};
+
+module.exports.resendActivationEmail = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email requis"
+            });
+        }
+
+        const user = await UsersModel.findOne({
+            email: email.toLowerCase().trim(),
+            isActivated: false
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Aucun compte non activé trouvé avec cet email'
+            });
+        }
+
+        // GENERER UN NOUVEAU TOKEN SI EXPIRE
+        const now = new Date();
+        if (!user.activationToken || user.activationTokenExpires < now) {
+            user.activationToken = emailServices.generateActivationToken();
+            user.activationTokenExpires = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+            await user.save();
+        }
+
+        // RENVOYER L'EMAIL
+        await emailServices.sendActivationEmail(user, user.activationToken);
+
+        res.json({
+            success: true,
+            message: `📧 Email d'activation renvoyé à ${email}`
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur renvoi email:', error);
+        next(createError(500, error.message));
+    }
+};
+
 

@@ -7,7 +7,7 @@ const Layout = () => {
     return (
         <>
             <Header/>
-                <section className="relative z-0">
+                <section>
                     <Outlet/>
                 </section>
             <Footer/>

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
-const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
+const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
     const [activeTab, setActiveTab] = useState('profile');
     const [userStats, setUserStats] = useState(null);
     const [formData, setFormData] = useState({
@@ -32,15 +33,24 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
 
     const fetchUserStats = async () => {
         try {
-            const response = await fetch('/api/auth/profile/stats', {
-                credentials: 'include'
+            const response = await axios.get('http://localhost:8000/api/suivis/stats', {
+                withCredentials: true
             });
-            if (response.ok) {
-                const stats = await response.json();
-                setUserStats(stats);
+
+            // ✅ VÉRIFIER LE CONTENT-TYPE
+            if (response.headers['content-type']?.includes('application/json')) {
+                setUserStats(response.data);
+            } else {
+                console.log('❌ Réponse non-JSON reçue');
+                // Rediriger vers login si HTML d'erreur
+                window.location.href = '/login';
             }
         } catch (error) {
-            console.error('Erreur récupération stats:', error);
+            console.log('❌ Erreur récupération stats:', error.message);
+            // Vérifier si c'est un problème d'auth
+            if (error.response?.status === 401) {
+                window.location.href = '/login';
+            }
         }
     };
 
@@ -114,26 +124,18 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
 
         setLoading(true);
         try {
-            const response = await fetch('/api/auth/profile/password', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({
-                    currentPassword: passwordData.currentPassword,
-                    newPassword: passwordData.newPassword
-                })
+            const response = await axios.put('http://localhost:8000/api/auth/change-password', passwordData, {
+                withCredentials: true,
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
             });
 
-            const data = await response.json();
-            
-            if (response.ok) {
-                setMessage('✅ Mot de passe modifié !');
-                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-            } else {
-                setMessage(`❌ ${data.message}`);
-            }
+            alert('✅ Mot de passe modifié avec succès !');
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (error) {
-            setMessage('❌ Erreur changement mot de passe');
+            console.error('❌ Erreur lors du changement de mot de passe:', error.response.data.message);
+            alert('❌ Erreur : ' + error.response.data.message);
         } finally {
             setLoading(false);
         }
@@ -144,23 +146,30 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
     return (
         <>
             {/* Overlay */}
-            <div 
-                className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${
-                    isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-                }`}
+            <div
+                className={`fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
+                    }`}
                 onClick={onClose}
+                aria-hidden="true"
             />
 
             {/* Slider Panel */}
-            <div 
-                className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[9999] transform transition-transform duration-300 overflow-y-auto ${
-                    isOpen ? 'translate-x-0' : 'translate-x-full'
-                }`}
+            <div
+                className={`fixed top-0 right-0 h-full bg-white z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'
+                    } flex flex-col`}
+                style={{
+                    width: '350px',        // largeur stable, adaptée au contenu
+                    maxWidth: '90vw',      // ne pas dépasser l'écran sur mobile
+                    boxSizing: 'border-box',
+                }}
+                onClick={e => e.stopPropagation()}
             >
+
+
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                     <h2 className="text-xl font-bold">👤 Mon Profil</h2>
-                    <button 
+                    <button
                         onClick={onClose}
                         className="text-2xl hover:bg-white hover:bg-opacity-20 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
                     >
@@ -180,7 +189,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="flex border-b bg-white overflow-x-auto">
+                <div className="flex border-b bg-white overflow-x-auto  min-w-0">
                     {[
                         { id: 'profile', label: '📝 Profil', icon: '📝' },
                         { id: 'stats', label: '📊 Stats', icon: '📊' },
@@ -190,11 +199,10 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex-1 px-3 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
-                                activeTab === tab.id
+                            className={`flex-shrink-0 px-3 py-3 text-sm font-medium whitespace-nowrap transition-colors min-w-0 ${activeTab === tab.id
                                     ? 'border-b-2 border-blue-500 text-blue-600 bg-blue-50'
                                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                            }`}
+                                }`}
                         >
                             <span className="hidden sm:inline">{tab.label}</span>
                             <span className="sm:hidden text-lg">{tab.icon}</span>
@@ -204,17 +212,16 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
 
                 {/* Message d'état */}
                 {message && (
-                    <div className={`mx-4 mt-4 p-3 rounded-lg text-sm ${
-                        message.includes('✅') 
-                            ? 'bg-green-100 text-green-700 border border-green-200' 
+                    <div className={`mx-4 mt-4 p-3 rounded-lg text-sm ${message.includes('✅')
+                            ? 'bg-green-100 text-green-700 border border-green-200'
                             : 'bg-red-100 text-red-700 border border-red-200'
-                    }`}>
+                        }`}>
                         {message}
                     </div>
                 )}
 
                 {/* Content */}
-                <div className="p-4">
+                <div className="p-4 flex-1">
                     {/* Onglet Profil */}
                     {activeTab === 'profile' && (
                         <form onSubmit={handleUpdateProfile} className="space-y-4">
@@ -225,12 +232,12 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
                                 <input
                                     type="text"
                                     value={formData.username}
-                                    onChange={(e) => setFormData({...formData, username: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 />
                             </div>
-                            
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Email
@@ -238,27 +245,27 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
                                 <input
                                     type="email"
                                     value={formData.email}
-                                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 />
                             </div>
-                            
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Bio
                                 </label>
                                 <textarea
                                     value={formData.bio}
-                                    onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                                     rows="3"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                                     placeholder="Parlez-nous de vous..."
                                 />
                             </div>
-                            
-                            <button 
-                                type="submit" 
+
+                            <button
+                                type="submit"
                                 disabled={loading}
                                 className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
@@ -276,22 +283,22 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
                                         <div className="text-2xl font-bold text-blue-600">{userStats.partiesJouees}</div>
                                         <div className="text-sm text-gray-600">Parties jouées</div>
                                     </div>
-                                    
+
                                     <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border">
                                         <div className="text-2xl font-bold text-green-600">{userStats.partiesGagnees}</div>
                                         <div className="text-sm text-gray-600">Parties gagnées</div>
                                     </div>
-                                    
+
                                     <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border">
                                         <div className="text-2xl font-bold text-purple-600">{userStats.salonsCreer || 0}</div>
                                         <div className="text-sm text-gray-600">Salons créés</div>
                                     </div>
-                                    
+
                                     <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border">
                                         <div className="text-2xl font-bold text-orange-600">{userStats.winRate}%</div>
                                         <div className="text-sm text-gray-600">Taux de victoire</div>
                                     </div>
-                                    
+
                                     <div className="col-span-2 bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-lg border">
                                         <div className="text-sm text-gray-600 mb-1">Membre depuis</div>
                                         <div className="font-semibold text-gray-800">
@@ -319,18 +326,17 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
                                 <div className="text-6xl mb-2">{selectedAvatar}</div>
                                 <p className="text-gray-600">Avatar actuel</p>
                             </div>
-                            
+
                             <div>
                                 <h4 className="font-semibold mb-3 text-gray-800">Choisir un nouvel avatar :</h4>
                                 <div className="grid grid-cols-5 gap-3">
                                     {avatarOptions.map((avatar) => (
                                         <button
                                             key={avatar}
-                                            className={`text-3xl p-3 rounded-lg border-2 hover:scale-110 transition-all ${
-                                                selectedAvatar === avatar
+                                            className={`text-3xl p-3 rounded-lg border-2 hover:scale-110 transition-all ${selectedAvatar === avatar
                                                     ? 'border-blue-500 bg-blue-50 scale-105'
                                                     : 'border-gray-200 hover:border-gray-300 bg-white'
-                                            }`}
+                                                }`}
                                             onClick={() => handleUpdateAvatar(avatar)}
                                         >
                                             {avatar}
@@ -351,12 +357,12 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
                                 <input
                                     type="password"
                                     value={passwordData.currentPassword}
-                                    onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 />
                             </div>
-                            
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Nouveau mot de passe
@@ -364,12 +370,12 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
                                 <input
                                     type="password"
                                     value={passwordData.newPassword}
-                                    onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 />
                             </div>
-                            
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Confirmer le nouveau mot de passe
@@ -377,14 +383,14 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
                                 <input
                                     type="password"
                                     value={passwordData.confirmPassword}
-                                    onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                 />
                             </div>
-                            
-                            <button 
-                                type="submit" 
+
+                            <button
+                                type="submit"
                                 disabled={loading}
                                 className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
@@ -392,6 +398,15 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser }) => {
                             </button>
                         </form>
                     )}
+                </div>
+                <div className="p-4 border-t bg-gray-50">
+                    <button
+                        onClick={onLogout}
+                        className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3 px-4 rounded-lg hover:from-red-600 hover:to-red-700 focus:ring-2 focus:ring-red-500 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg"
+                    >
+                        <span>🚪</span>
+                        Se déconnecter
+                    </button>
                 </div>
             </div>
         </>

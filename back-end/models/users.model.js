@@ -29,6 +29,18 @@ const usersSchema = mongoose.Schema(
             type: Boolean,
             default: false
         },
+        activationToken: {
+            type: String,
+            default: null
+        },
+        activationTokenExpires: {
+            type: Date,
+            default: null
+        },
+        isActivated: {
+            type: Boolean,
+            default: false
+        },
         isActive: {
             type: Boolean,
             default: true
@@ -50,7 +62,21 @@ const usersSchema = mongoose.Schema(
                 type: Number,
                 default: 0
             }
+        },
+        avatar: {
+            type: String,
+            default: '👤',
+            maxLength: 4
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        },
+        updatedAt: {
+            type: Date,
+            default: Date.now
         }
+
     }, { timestamps: true }
 );
 

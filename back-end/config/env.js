@@ -10,7 +10,12 @@ const ENV = {
     MONGO_URI_LOCAL: process.env.MONGO_URI_LOCAL,
     TOKEN_SIGNATURE: process.env.TOKEN_SIGNATURE,
     EMAIL_USER: process.env.EMAIL_USER,
-    EMAIL_PASS: process.env.EMAIL_PASS
+    EMAIL_PASS: process.env.EMAIL_PASS,
+    EMAIL_HOST: process.env.EMAIL_HOST,        
+    EMAIL_PORT: process.env.EMAIL_PORT,        
+    EMAIL_SECURE: process.env.EMAIL_SECURE,    
+    EMAIL_FROM: process.env.EMAIL_FROM,        
+    CLIENT_URL: process.env.CLIENT_URL
 }
 
 module.exports = ENV;

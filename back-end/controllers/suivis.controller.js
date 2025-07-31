@@ -50,7 +50,7 @@ const suivisController = {
             const userId = req.user.id;
 
             const stats = await SuivisModel.aggregate([
-                { $match: { userId: mongoose.Types.ObjectId(userId) } },
+                { $match: { userId: new mongoose.Types.ObjectId(userId) } },
                 {
                     $group: {
                         _id: null,
@@ -63,7 +63,7 @@ const suivisController = {
                         scissorsUsed: { $sum: { $cond: [{ $eq: ['$choiceUsed', 'scissors'] }, 1, 0] } },
                         avgGameDuration: { $avg: 'gameDuration' },
                         maxConsecutiveWins: { $max: '$metadata.consecutiveWins' },
-                        maxConsecutivelosses: { $max: '$metadata.consecutiveLosses' }
+                        maxConsecutiveLosses: { $max: '$metadata.consecutiveLosses' }
                     }
                 }
             ]);

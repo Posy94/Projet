@@ -20,6 +20,12 @@ function Connexion({ setUser }) {
 
             const result = response.data
 
+            if (result.token) {
+                localStorage.setItem('token', result.token);
+                localStorage.setItem('user', JSON.stringify(result.user));
+                console.log('✅ Token sauvegardé:', result.token);                
+            }
+
             setUser(result.user)
 
             window.location.href = "/listeSalons";

@@ -8,7 +8,6 @@ const { RecompenseDefinition } = require('./models/recompenses.model')
 RecompenseDefinition.initializerRecompensesByDefault();
 
 // IMPORT ROUTER
-// const usersRouter = require('./router/users.router');
 const salonsRouter = require('./router/salons.router');
 const recompensesRouter = require('./router/recompenses.router');
 const suivisRouter = require('./router/suivis.router');

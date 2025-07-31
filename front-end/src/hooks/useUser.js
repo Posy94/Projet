@@ -8,8 +8,8 @@ export default function useUser() {
         try {
             const storedUser = localStorage.getItem("user");
             if (storedUser) {
-                setUser(JSON.parse(storedUser));
-                setUser(userData);
+                const parsedUser = JSON.parse(storedUser);
+                setUser(parsedUser);
             }
         } catch (error) {
             console.error('Erreur parsing user localStorage:', error);
@@ -29,5 +29,12 @@ export default function useUser() {
         }
     };
 
-    return { user, loading, updateUser };
+    // FONCTION LOGOUT
+    const logout = () => {
+        setUser(null);
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+    };
+
+    return { user, loading, logout, updateUser };
 }

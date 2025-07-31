@@ -4,6 +4,8 @@ const verifieToken = require('../middlewares/auth');
 
 // 🔐 Routes publiques (pas de token requis)
 router.post('/register', authController.register);
+router.get('/activate/:token', authController.activateAccount);
+router.post('/resend-activation', authController.resendActivationEmail);
 router.post('/login', authController.login);
 router.post('/logout', authController.logout);
 

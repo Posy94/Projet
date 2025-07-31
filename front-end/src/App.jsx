@@ -24,51 +24,42 @@ import Notitfications from './pages/notifications';
 import Salon from './pages/salon';
 import Statistiques from './pages/statistiques';
 import Recompenses from './pages/recompenses';
-import ProfileSlider from './components/ProfilSlider';
 
 import './App.css';
 
 function App() {
-  const [user,setUser] = useState(null);
-  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [user, setUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const[loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔄 useEffect déclenché - Vérification du profil...');
-    axios.get('http://localhost:8000/api/auth/profile', { withCredentials: true })
-      .then((res) => {
-        console.log('✅ Utilisateur connecté:', res.data);
-        setUser(res.data);
-        console.log('📝 State user mis à jour');
-      })
-      .catch((error) => {
-        console.log('ℹ️ Utilisateur non connecté');
-        setUser(null);
-      });
-  }, []);
+    const checkAuth = async () => {
+      const hasToken = document.cookie.includes('token=');
 
-  console.log('📊 STATE USER ACTUEL:', user);
+      if(!hasToken) {
+        console.log('👤 Utilisateur non connecté');
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get('http://localhost:8000/api/auth/profile', { withCredentials: true });
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.log('❌ Auth échouée:', error.message);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
   return (
     <div>
-      {user && (
-        <>
-          {/* Bouton profil fixe */}
-          <button
-          onClick={() => setIsProfileOpen(true)}
-          className="fixed top-5 right-5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-full w-14 h-14 text-2xl cursor-pointer z-50 shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105"
-          title='Ouvrir le profil'
-          >
-            👤
-          </button>
-          <ProfileSlider
-            isOpen={isProfileOpen}
-            onClose={() => setIsProfileOpen(false)}
-            user={user}
-            updatedUser={setUser}
-          />
-        </>
-      )}
-
       <Routes>
         <Route element={<Layout/>}>
           <Route index element={<Home />}/>

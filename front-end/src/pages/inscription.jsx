@@ -21,7 +21,7 @@ function Inscription({ setUser }) {
 
         try {
             const response = await axios.post(
-                "http://localhost:8000/api/user/register",
+                "http://localhost:8000/api/auth/register",
                 {
                     username: data.pseudo,
                     email: data.email,
@@ -30,7 +30,6 @@ function Inscription({ setUser }) {
                 { withCredentials: true }
             );
 
-            console.log('Inscription réussie', response.data);
             setUser(response.data.user);
             navigate("/ListeSalons");
             
