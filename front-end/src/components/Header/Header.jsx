@@ -38,7 +38,7 @@ const Header = () => {
                 localStorage.removeItem('token');
                 setIsMenuOpen(false);
                 setIsProfilOpen(false);
-                window.location.href = '/connexion'
+                window.location.href = '/'
             }
 
         } catch (error) {

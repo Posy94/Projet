@@ -61,7 +61,11 @@ const salonsSchema = new mongoose.Schema(
                 type: Number,
                 default: 0
             }
-        }]
+        }],
+        gameType: {
+            type: String,
+            default: null
+        }
     },
     { timestamps: true }
 );

@@ -1,5 +1,6 @@
 const SalonsModel = require ('../models/salons.model');
 const UsersModel = require('../models/users.model');
+const { v4: uuidv4 } = require('uuid');
 
 const salonController = {
 
@@ -153,7 +154,65 @@ const salonController = {
         } catch (error) {
             res.status(400).json({ error: error.message });
         }
-    }
+    },
+
+    // CREER PARTIE IA
+    createAISalon: async (req, res) => {
+        try {
+            const userId = req.user.id;
+            const salonId = uuidv4();
+
+            const salon = new SalonsModel({
+                salonId,
+                creator: userId,
+                gameType: 'ai',
+                maxPlayers: 1,
+                status: 'waiting',
+                currentRound: 1,
+                maxRounds: 5
+            });
+
+            await salon.save();
+
+            res.json({
+                success: true,
+                salonId,
+                message: 'Salon IA créé'
+            });
+        } catch (error) {
+            console.error('Erreur créer salon IA', error);
+            res.status(500).json({ error: 'Erreur serveur' });
+        }
+    },
+
+    // CREER PARTIE PVP
+    createPvPSalon: async (req, res) => {
+        try {
+            const userId = req.user.id;
+            const salonId = uuidv4();
+
+            const salon = new SalonsModel({
+                salonId,
+                creator: userId,
+                gameType: 'pvp',
+                maxPlayers: 2,
+                status: 'waiting',
+                currentRound: 1,
+                maxRounds: 5
+            });
+
+            await salon.save();
+
+            res.json({
+                success: true,
+                salonId,
+                message: 'Salon PVP créé'
+            });
+        } catch (error) {
+            console.error('Erreur créer salon PVP', error);
+            res.status(500).json({ error: 'Erreur serveur' });
+        }
+    },
 };
 
 module.exports = salonController;

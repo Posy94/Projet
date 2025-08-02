@@ -95,6 +95,31 @@ module.exports = (io) => {
                 salon.players[playerIndex].choice = choice;
                 await salon.save();
 
+                // GESTION IA
+                if (salon.gameType === 'ai') {
+                    // SIMULATION CHOIX IA
+                    const aiChoices = ['pierre', 'feuille', 'ciseaux'];
+                    const aiChoice = aiChoices[Math.floor(Math.random() * 3)];
+
+                    // CREER JOUEUR IA VIRTUEL
+                    const aiResult = calculateWinner([
+                        { user: userId, choice },
+                        { user: 'AI', choice: aiChoice }
+                    ]);
+
+                    // ENVOYER RESULTAT IMMEDIAT
+                    socket.emit('roundResult', {
+                        result: aiResult,
+                        choices: [
+                            { userId, choice },
+                            { iserId: 'AI', choice: aiChoice }
+                        ],
+                        round: salon.currentRound
+                    });
+
+                    return;
+                }
+
                 // INFORMER QUE LE JOUEUR A FAIT SON CHOIX SANS LE REVELER
                 socket.to(salonId).emit('playerMadeChoice', {
                     playerId: userId,

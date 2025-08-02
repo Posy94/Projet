@@ -31,14 +31,6 @@ module.exports.register = async (req, res, next) => {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 12);
         
-        // Créer user
-        // const user = await UsersModel.create({
-        //     username,
-        //     email,
-        //     password: hashedPassword,
-        //     stats: { gamesPlayed: 0, wins: 0, losses: 0 }
-        // });
-        
         // GENERER TOKEN D'ACTIVATION
         const activationToken = emailServices.generateActivationToken();
         const activationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);

@@ -2,8 +2,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import axios from 'axios';
+import useUser from "../hooks/useUser";
 
-function Inscription({ setUser }) {
+function Inscription() {
     const {
         register,
         handleSubmit,
@@ -14,6 +15,7 @@ function Inscription({ setUser }) {
     const [error, setError] = useState('');
     const [isLoading, setIsloading] = useState(false);
     const navigate = useNavigate();
+    const { updateUser } = useUser()
 
     const onSubmit = async (data) => {
         setError('');
@@ -30,8 +32,11 @@ function Inscription({ setUser }) {
                 { withCredentials: true }
             );
 
-            setUser(response.data.user);
-            navigate("/ListeSalons");
+            updateUser(response.data.user);
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token)
+            }
+            navigate("/");
             
         } catch (error) {
             console.error("Erreur complète:", error);

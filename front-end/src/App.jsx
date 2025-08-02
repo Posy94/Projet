@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router';
+import useUser from './hooks/useUser';
 
 //COMPONENTS & PAGES
 import Layout from './components/Layout/Layout';
@@ -28,35 +29,9 @@ import Recompenses from './pages/recompenses';
 import './App.css';
 
 function App() {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const[loading, setLoading] = useState(true);
+  const { user, loading, setIsAuthenticated } = useUser();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const hasToken = document.cookie.includes('token=');
-
-      if(!hasToken) {
-        console.log('👤 Utilisateur non connecté');
-        setIsAuthenticated(false);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await axios.get('http://localhost:8000/api/auth/profile', { withCredentials: true });
-        setUser(response.data.user);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.log('❌ Auth échouée:', error.message);
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    checkAuth();
-  }, []);
+  if (loading) return <div>Chargement...</div>
 
   return (
     <div>
@@ -71,8 +46,8 @@ function App() {
           {/* PAGES UTILISATEUR */}
           <Route path='/notifications' element={<Notitfications/>}/>
           <Route path='/profiljoueur' element={<ProfilJoueur/>}/>
-          <Route path='/inscription' element={<Inscription setUser={setUser}/>}/>
-          <Route path='/connexion' element={<Connexion setUser={setUser}/>}/>
+          <Route path='/inscription' element={<Inscription/>}/>
+          <Route path='/connexion' element={<Connexion/>}/>
           {/* FONCTIONNALITE MULTIJOUEUR */}
           <Route path='/creationSalon' element={<CreationSalon/>}/>
           <Route path='/listeSalons' element={<ListeSalons/>}/>

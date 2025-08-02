@@ -1,17 +1,20 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form"
 import axios from 'axios';
+import useUser from "../hooks/useUser";
 
-function Connexion({ setUser }) {
+function Connexion() {
     const {
         register,
         handleSubmit,
         formState: { errors },
     } = useForm();
 
+    const{ updateUser } = useUser();
+    const navigate = useNavigate();
+
     const onSubmit = async (data) => {
         try {
-            console.log("Données envoyées :", data);
             const response = await axios.post(
                 "http://localhost:8000/api/auth/login",
                 data,
@@ -22,13 +25,12 @@ function Connexion({ setUser }) {
 
             if (result.token) {
                 localStorage.setItem('token', result.token);
-                localStorage.setItem('user', JSON.stringify(result.user));
-                console.log('✅ Token sauvegardé:', result.token);                
             }
 
-            setUser(result.user)
+            updateUser(result.user);
 
-            window.location.href = "/listeSalons";
+            navigate('/');
+
         } catch (error) {
             console.error("Erreur complète :", error.response);
             if (error.response?.data?.message) {
