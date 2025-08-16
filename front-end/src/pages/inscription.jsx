@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import axios from 'axios';
-import useUser from "../hooks/useUser";
+import { useUser } from "../contexts/UserContext";
 
 function Inscription() {
     const {

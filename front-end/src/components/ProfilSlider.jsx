@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -43,13 +44,13 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
             } else {
                 console.log('❌ Réponse non-JSON reçue');
                 // Rediriger vers login si HTML d'erreur
-                window.location.href = '/login';
+                Navigate('/connexion');
             }
         } catch (error) {
             console.log('❌ Erreur récupération stats:', error.message);
             // Vérifier si c'est un problème d'auth
             if (error.response?.status === 401) {
-                window.location.href = '/login';
+                Navigate('/connexion');
             }
         }
     };
@@ -102,6 +103,12 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
             if (response.ok) {
                 setSelectedAvatar(newAvatar);
                 setMessage('✅ Avatar mis à jour !');
+
+                // AUTO EFFACEMENT APRES 3 SECONDES
+                setTimeout(() => {
+                    setMessage('');
+                }, 3000);
+
                 if (updateUser) {
                     updateUser({
                         ...user,
@@ -111,6 +118,10 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
             }
         } catch (error) {
             setMessage('❌ Erreur mise à jour avatar');
+
+            setTimeout(() => {
+                    setMessage('');
+                }, 5000);
         }
     };
 
@@ -221,7 +232,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                 )}
 
                 {/* Content */}
-                <div className="p-4 flex-1">
+                <div className="p-4 min-h-0 overflow-auto">
                     {/* Onglet Profil */}
                     {activeTab === 'profile' && (
                         <form onSubmit={handleUpdateProfile} className="space-y-4">
@@ -273,6 +284,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                             </button>
                         </form>
                     )}
+                    
 
                     {/* Onglet Stats */}
                     {activeTab === 'stats' && (
@@ -333,7 +345,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                                     {avatarOptions.map((avatar) => (
                                         <button
                                             key={avatar}
-                                            className={`text-3xl p-3 rounded-lg border-2 hover:scale-110 transition-all ${selectedAvatar === avatar
+                                            className={`text-3xl p-3 rounded-lg border-2 hover:scale-110 transition-all flex items-center justify-center ${selectedAvatar === avatar
                                                     ? 'border-blue-500 bg-blue-50 scale-105'
                                                     : 'border-gray-200 hover:border-gray-300 bg-white'
                                                 }`}

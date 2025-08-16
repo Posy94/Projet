@@ -75,6 +75,10 @@ const usersSchema = mongoose.Schema(
         updatedAt: {
             type: Date,
             default: Date.now
+        },
+        bio: {
+            type: String,
+            default: null
         }
 
     }, { timestamps: true }

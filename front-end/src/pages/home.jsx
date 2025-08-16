@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
-import useUser from "../hooks/useUser";
+import { useUser } from "../contexts/UserContext";
 
 const Home = () => {
 
@@ -17,12 +17,12 @@ const Home = () => {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
+                },
             });
 
             if (response.ok) {
                 const { salonId } = await response.json();
-                navigate(`/game/${salonId}`);
+                navigate(`/jeu/${salonId}`);
             } else {
                 alert('❌ Erreur lors de la création de la partie');
             }
@@ -131,23 +131,25 @@ const Home = () => {
                 </div>
             )}
 
-            <div className="flex gap-6">
-                <Link
-                    to="/inscription"
-                    className="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition duration-200 shadow"
-                >
-                    Créer un compte
-                </Link>
+            {!user && (
+               <div className="flex gap-6">
+                   <Link
+                       to="/inscription"
+                       className="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition duration-200 shadow"
+                   >
+                       Créer un compte
+                   </Link>
 
-                <Link
-                    to="/connexion"
-                    className="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition duration-200 shadow"
-                >
-                    Se connecter
-                </Link>
-            </div>
+                   <Link
+                       to="/connexion"
+                       className="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition duration-200 shadow"
+                   >
+                       Se connecter
+                   </Link>
+               </div>
+            )}
 
-            <div className="mt16 text-sm text-gray-500">
+            <div className="mt-8 text-sm text-gray-500">
                 <Link to={"/regles"} className="underline hover:text-blue-700">Voir les règles du jeu</Link>
             </div>
         </div>

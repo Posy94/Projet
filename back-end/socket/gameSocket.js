@@ -1,6 +1,7 @@
 const SalonsModel = require('../models/salons.model');
 const suiviController = require('../controllers/suivis.controller');
-const RecompensesController = require('../controllers/recompenses.controller')
+const RecompensesController = require('../controllers/recompenses.controller');
+const mongoose = require('mongoose');
 
 module.exports = (io) => {
     io.on('connection', (socket) => {
@@ -9,61 +10,193 @@ module.exports = (io) => {
         // REJOINDRE UN SALON
         socket.on('joinSalon', async ({ salonId, userId, username }) => {
             try {
-                const salon = await SalonsModel.findOne({ salonId }).populate('players.user creator');
+
+                console.log('🔵 AVANT POPULATE - salonId:', salonId);
+
+                const salon = await SalonsModel.findOne({ salonId })
+                    .populate('players.user', 'username email')
+                    .populate('userCreator', 'username email');
+
+                console.log('🟢 APRÈS POPULATE - salon:', JSON.stringify(salon, null, 2));
+                console.log('🟡 PLAYERS DÉTAILLÉS:', salon?.players?.map(p => ({
+                    userId: p?.user?._id,
+                    username: p?.user?.username,
+                    userObject: p?.user
+                })));
 
                 if (!salon) {
                     return socket.emit('error', 'Salon introuvable');
                 }
 
-                if (salon.players.length >= salon.maxPlayers) {
-                    return socket.emit('error', 'Salon complet');
+                // DETECTION DU TYPE DE SALON
+                if (salon.gameType === 'ai') {
+                    // SALON IA
+                    await handleAISalon(socket, salon, userId, username, salonId);
+                } else {
+                    // SALON MULTIJOUEUR
+                    await handleMultiplayerSalon(socket, salon, userId, username, salonId);
                 }
-
-                // VERIFIER SI LE JOUEUR N'EST PAS DEJA DANS LE SALON
-                const isAlreadyInSalon = salon.players.some(
-                    player => player.user._id.toString() === userId
-                );
-
-                if (!isAlreadyInSalon) {
-                    salon.players.push({
-                        user: userId,
-                        choice: null,
-                        ready: false,
-                        socketId: socket.id
-                    });
-                    await salon.save();
-                }
-
-                // REJOINDRE LE SALON SOCKET.IO
-                socket.join(salonId);
-                socket.userId = userId;
-                socket.salonId = salonId;
-
-                // INFORMER TOUS LES JOUEURS DU SALON
-                const updatedSalon = await SalonsModel.findOne({ salonId }).populate('players.user creator');
-                io.to(salonId).emit('salonUpdated', updatedSalon);
-
-                console.log(`${username} a rejoint le salon ${salonId}`);
-                
+            
             } catch (error) {
-                socket.emit('error', error.message);
+                console.error('Erreur joinSalon:', error);
+                socket.emit('error', error.message);                
             }
         });
 
+        // FONCTION MULTIJOUEUR
+        async function handleMultiplayerSalon(socket, salon, userId, username, salonId) {
+            if (salon.players.length >= salon.maxPlayers) {
+                return socket.emit('error', 'Salon complet');
+            }
+            // VERIFIER SI LE JOUEUR N'EST PAS DEJA DANS LE SALON
+            const isAlreadyInSalon = salon.players.some(
+                player => player.user._id.toString() === userId
+            );
+            if (!isAlreadyInSalon) {
+                salon.players.push({
+                    user: userId,
+                    choice: null,
+                    ready: false,
+                    socketId: socket.id
+                });
+                await salon.save();
+            }
+            // REJOINDRE LE SALON SOCKET.IO
+            socket.join(salonId);
+            socket.userId = userId;
+            socket.salonId = salonId;
+            // INFORMER TOUS LES JOUEURS DU SALON
+            const updatedSalon = await SalonsModel.findOne({ salonId })
+                .populate('players.user', 'username email')
+                
+                .populate('userCreator', 'username email');
+            io.to(salonId).emit('salonUpdated', updatedSalon);
+            console.log(`${username} a rejoint le salon ${salonId}`);
+            
+        }
+
+        // FONCTION IA
+        async function handleAISalon(socket, salon, userId, username, salonId) {
+            
+            console.log('🔴 DÉBUT handleAISalon - salonId:', salonId);
+            console.log('🔴 SALON RÉCUPÉRÉ - scores actuels:', salon.scores);
+
+            if (!salon.scores || salon.scores.length === 0) {
+                salon.scores = [
+                    {
+                        user: new mongoose.Types.ObjectId(userId), // Joueur humain
+                        wins: 0
+                    },
+                    {
+                        user: null, // IA (pas d'ObjectId)
+                        wins: 0
+                    }
+                ];
+                console.log('🎯 SCORES INITIALISÉS:', salon.scores);
+            } else {
+                console.log('🔄 SCORES EXISTANTS CONSERVÉS:', salon.scores);
+            }
+
+            const existingPlayer = salon.players.find(p => {
+                const playerUserId = p.user?._id ? p.user._id.toString() : p.user?.toString();
+                console.log('🔍 Comparaison:', playerUserId, 'vs', userId);
+                return playerUserId === userId;
+            });
+
+            if (!existingPlayer) {
+                console.log('🟢 AJOUT du joueur...');
+                salon.players.push({
+                    user: new mongoose.Types.ObjectId(userId),
+                    userId: userId,
+                    username: username,
+                    ready: false,
+                    choice: null,
+                    socketId: socket.id
+                });
+                console.log('✅ Joueur ajouté:', userId);
+
+                const aiPlayer = salon.players.find(p => p.userId === 'ai');
+
+                if (!aiPlayer) {
+                    console.log('🤖 AJOUT de l\'IA...');
+                    salon.players.push({
+                        userId: 'ai',
+                        username: 'IA',
+                        isAI: true,
+                        ready: true,
+                        choice: null,
+                        socketId: 'ai-socket'
+                    });
+                    console.log('✅ IA ajoutée !');                    
+                }
+
+                await salon.save();
+                console.log('🟢 Salon avec IA sauvegardé ! Scores:', salon.scores);
+            } else {
+                existingPlayer.socketId = socket.id;
+                await salon.save();
+            }
+
+            socket.join(salonId);
+            socket.userId = userId;
+            socket.salonId = salonId;
+            socket.username = username;
+
+            const updatedSalon = await SalonsModel.findOne({ salonId })
+                .populate('userCreator', 'username email');
+
+            console.log('🟡 FINAL updatedSalon.players:', updatedSalon.players);
+            console.log('📊 FINAL updatedSalon.scores:', updatedSalon.scores);
+            console.log('🤖 Nombre de joueurs final:', updatedSalon.players.length);
+
+            io.to(salonId).emit('salonUpdated', updatedSalon);
+            console.log(`${username} a rejoint le salon IA ${salonId}`);
+        }
+
+
         // JOUEUR PRET
         socket.on('playerReady', async ({ salonId, userId }) => {
+            console.log('🔴 EVENT playerReady REÇU !');
+            console.log('🔍 salonId:', salonId);
+            console.log('🔍 userId:', userId);
+
             try {
                 const salon = await SalonsModel.findOne({ salonId });
+
+                console.log('🔍 Salon trouvé:', salon ? 'OUI' : 'NON');
+
                 const playerIndex = salon.players.findIndex(p => p.user.toString() === userId);
+                console.log('🔍 PlayerIndex trouvé:', playerIndex);
 
                 if (playerIndex !== -1) {
                     salon.players[playerIndex].ready = true;
+
+                    if (salon.gameType === 'ai') {
+                        console.log('🤖 Salon IA détecté - Auto-ready IA');
+                        const aiPlayerIndex = salon.players.findIndex(p => p.userId === 'ai');
+                        console.log('🤖 AI PlayerIndex:', aiPlayerIndex);
+                        if (aiPlayerIndex !== -1) {
+                            salon.players[aiPlayerIndex].ready = true;
+                            console.log('🤖 IA mise en ready !');
+                        }                        
+                    }
+
                     await salon.save();
 
                     // VERIFIER SI TOUS LES JOUEURS SON PRETS
                     const allReady = salon.players.every(p => p.ready);
+                    console.log('🔍 Tous prêts ?', allReady);
+                    console.log('🔍 Nombre de joueurs:', salon.players.length);
+                    console.log('🔍 GameType:', salon.gameType);
 
-                    if (allReady && salon.players.length == recompensesModel.maxPlayers) {
+                    const canStart = salon.gameType === 'ai' ?
+                        allReady && salon.players.length === 2 :
+                        allReady && salon.players.length === recompensesModel.maxPlayers;
+
+                    console.log('🔍 Peut démarrer ?', canStart);
+
+                    if (canStart) {
+                        console.log('🚀 DÉMARRAGE DU JEU !');
                         salon.status = 'playing';
                         salon.roundStartTime = new Date();
                         await salon.save();
@@ -72,20 +205,27 @@ module.exports = (io) => {
                             message: 'La partie commence !',
                             round: salon.currentRound
                         });
+                    } else {
+                        console.log('❌ Conditions pas remplies pour démarrer');
                     }
 
-                    const updatedSalon = await SalonsModel.findOne({ salonId }).populate('players.user');
+                    const updatedSalon = await SalonsModel.findOne({ salonId })
+                        .populate('players.user', 'username email')
+                        .populate('userCreator', 'username email');
                     io.to(salonId).emit('salonUpdated', updatedSalon);
                 }
             } catch (error) {
+                console.error('❌ Erreur:', error);
                 socket.emit('error', error.message);
             }
         });
 
         // FAIRE UN CHOIX
-        socket.on('makeChoice', async ({ salonId, userId, choice }) => {
+        socket.on('playerChoice', async ({ salonId, userId, choice }) => {
+            console.log('🎯 CHOIX REÇU:', { salonId, userId, choice });
             try {
                 const salon = await SalonsModel.findOne({ salonId });
+                console.log('🎯 SALON TROUVÉ:', salon ? 'OUI' : 'NON');
                 const playerIndex = salon.players.findIndex(p => p.user.toString() === userId);
 
                 if (playerIndex === -1) {
@@ -97,25 +237,89 @@ module.exports = (io) => {
 
                 // GESTION IA
                 if (salon.gameType === 'ai') {
+                    console.log('🤖 MODE IA ACTIVÉ');
+
                     // SIMULATION CHOIX IA
-                    const aiChoices = ['pierre', 'feuille', 'ciseaux'];
+                    const aiChoices = ['rock', 'paper', 'scissors'];
                     const aiChoice = aiChoices[Math.floor(Math.random() * 3)];
+                    console.log('🤖 CHOIX IA:', aiChoice);
 
                     // CREER JOUEUR IA VIRTUEL
                     const aiResult = calculateWinner([
                         { user: userId, choice },
                         { user: 'AI', choice: aiChoice }
                     ]);
+                    console.log('🎯 RÉSULTAT CALCULÉ:', aiResult);
+
+                    // MET A JOUR LES SCORES
+                    if (aiResult === 'player1') {
+                        salon.scores[0].wins++;
+                        console.log('🏆 JOUEUR GAGNE ! Score:', salon.scores[0].wins);
+                    } else if (aiResult === 'player2') {
+                        salon.scores[1].wins++;
+                        console.log('🤖 IA GAGNE ! Score:', salon.scores[1].wins);
+                    }
+                    console.log('📊 SCORES ACTUELS:', salon.scores);
+
+                    console.log('💾 AVANT SAVE - scores:', salon.scores);
+                    await salon.save();
+                    console.log('✅ APRÈS SAVE - scores sauvegardés');
 
                     // ENVOYER RESULTAT IMMEDIAT
                     socket.emit('roundResult', {
                         result: aiResult,
                         choices: [
                             { userId, choice },
-                            { iserId: 'AI', choice: aiChoice }
+                            { userId: 'AI', choice: aiChoice }
                         ],
-                        round: salon.currentRound
+                        round: salon.currentRound,
+                        scores: [
+                            salon.scores[0]?.wins || 0,
+                            salon.scores[1]?.wins || 0
+                        ]
                     });
+                    console.log('📤 RÉSULTAT ENVOYÉ AU CLIENT');
+
+                    const maxScore = Math.max(...salon.scores);
+                    if (maxScore >= 3) {
+                        console.log('🏁 FIN DE PARTIE !');
+
+                        const winner = salon.scores[0] >= 3 ? 'player' : 'ai';
+
+                        socket.emit('gameEnd', {
+                            winner: winner,
+                            finalScores: salon.scores,
+                            message: winner === 'player' ? 'Félicitations ! Vous avez gagné !' : 'L\IA a gagné ! Réessayez !'
+                        });
+
+                        console.log('🏆 GAGNANT:', winner);
+                        return;                        
+                    }
+
+                    console.log('🔴 SCORES AVANT setTimeout:', salon.scores);
+
+                    setTimeout(() => {
+                        salon.currentRound += 1;
+
+                        salon.players.forEach(player => {
+                            if (player.id.toString() === userId) {
+                                player.currentChoice = null;
+                            }
+                        });
+
+                        console.log('🔄 ROUND SUIVANT PRÉPARÉ:', salon.currentRound);
+
+                        const simpleScores = salon.scores.map(scoreObj => scoreObj.wins);
+                        console.log('📤 NEXT ROUND - SCORES ENVOYÉS (FORMAT SIMPLE):', simpleScores);
+
+                        socket.emit('nextRound', {
+                            round: salon.currentRound,
+                            scores: simpleScores
+                        });
+
+                        console.log('📤 NEXT ROUND ENVOYÉ');
+
+                    }, 200);
 
                     return;
                 }
@@ -215,6 +419,7 @@ module.exports = (io) => {
                 }
             } catch (error) {
                 socket.emit('error', error.message);
+                console.error('❌ ERREUR:', error);
             }
         });
 
@@ -260,21 +465,33 @@ module.exports = (io) => {
 
         // DECONNEXION
         socket.on('disconnect', async () => {
-            console.log('Utilisateur déconnecté:', socket.id);
+            try {
+                const { salonId, userId, username } = socket;
 
-            if (socket.salonId && socket.userId) {
-                try {
-                    const salon = await SalonsModel.findOne({ salonId: socket.salonId });
+                if (salonId && userId) {
+                    const salon = await SalonsModel.findOne({ salonId }).populate('players.user', 'username email').populate('userCreator', 'username email');
+
                     if (salon) {
-                        salon.players = salon.players.filter(p => p.user.toString() !== socket.userId);
+                        if (salon.gameType === 'ai') {
+                            console.log(`Utilisateur ${username || 'inconnu'} s'est déconnecté du salon IA ${salonId}`);
+                            return;                        
+                        }
+
+                        salon.players = salon.players.filter(
+                            player => player.user._id.toString() !== userId
+                        );
+
                         await salon.save();
 
-                        const updatedSalon = await SalonsModel.findOne({ salonId: socket.salonId }).populate('players.user');
-                        io.to(socket.salonId).emit('salonUpdated', updatedSalon);
+                        const updatedSalon = await SalonsModel.findOne({ salonId }).populate('players.user', 'username email').populate('userCreator', 'username email');
+                        socket.to(salonId).emit('salonUpdated', updatedSalon);
+
+                        console.log(`Utilisateur ${username || 'inconnu'} a quitté le salon multijoueur ${salonId}`);                        
                     }
-                } catch (error) {
-                    console.error('Erreur lors de la déconnexion:', error);  
                 }
+            } catch (error) {
+                console.error('Erreur lors de la déconnexion:', error);
+                
             }   
         });
     });

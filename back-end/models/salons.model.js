@@ -18,8 +18,10 @@ const salonsSchema = new mongoose.Schema(
         players: [{
             user: {
                 type: mongoose.Schema.Types.ObjectId,
-                ref:'users'
+                ref: 'users'
             },
+            userId: String,
+            username: String, 
             choice: {
                 type: String,
                 enum: ['rock', 'paper', 'scissors', null],

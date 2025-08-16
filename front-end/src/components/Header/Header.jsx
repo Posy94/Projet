@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router";
-import useUser from "../../hooks/useUser";
+import { useUser } from "../../contexts/UserContext";
 import ProfilSlider from '../ProfilSlider';
 import axios from "axios";
 

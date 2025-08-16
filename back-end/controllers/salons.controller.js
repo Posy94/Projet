@@ -89,8 +89,15 @@ const salonController = {
     getSalonDetails: async (req, res) => {
         try {
             const { salonId } = req.params;
+
+            const salonBrut = await SalonsModel.findOne({ salonId });
+            console.log('🔵 SALON BRUT players:', JSON.stringify(salonBrut.players, null, 2));
+
             const salon = await SalonsModel.findOne({ salonId })
-                .populate('creator players.user', 'username');
+                .populate('userCreator', 'username email')
+                .populate('players.user', 'username email');
+
+            console.log('🟢 SALON POPULÉ players:', JSON.stringify(salon.players, null, 2));
             
             if (!salon) {
                 return res.status(404).json({ error: 'Salon introuvable' })
@@ -164,9 +171,10 @@ const salonController = {
 
             const salon = new SalonsModel({
                 salonId,
-                creator: userId,
+                name: `Partie IA ${new Date().toLocaleString()}`,
+                userCreator: userId,
                 gameType: 'ai',
-                maxPlayers: 1,
+                maxPlayers: 2,
                 status: 'waiting',
                 currentRound: 1,
                 maxRounds: 5

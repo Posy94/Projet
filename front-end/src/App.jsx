@@ -1,8 +1,6 @@
 import { Routes, Route } from 'react-router';
-import { useEffect, useState } from 'react';
-import axios from 'axios';
 import { Link } from 'react-router';
-import useUser from './hooks/useUser';
+import { UserProvider, useUser } from './contexts/UserContext';
 
 //COMPONENTS & PAGES
 import Layout from './components/Layout/Layout';
@@ -28,8 +26,8 @@ import Recompenses from './pages/recompenses';
 
 import './App.css';
 
-function App() {
-  const { user, loading, setIsAuthenticated } = useUser();
+function AppContent() {
+  const { user, loading } = useUser();
 
   if (loading) return <div>Chargement...</div>
 
@@ -70,6 +68,15 @@ function App() {
         </Route>
       </Routes>
     </div>
+  );
+}
+
+// COMPOSANT PRINCIPAL AVEC LE PROVIDER
+function App() {
+  return (
+    <UserProvider>
+      <AppContent />
+    </UserProvider>
   );
 }
 
