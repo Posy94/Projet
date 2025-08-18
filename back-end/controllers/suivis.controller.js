@@ -271,7 +271,7 @@ async function updateUserStats(userId, result, choiceUsed) {
     // INCREMENTER LES STATISTIQUES PAR CHOIX
     updateQuery.$inc[`stats.choices.${choiceUsed}`] = 1;
 
-    await UsersModel.findByAndUpdate(userId, updateQuery);
+    await UsersModel.findByAndUpadte(userId, updateQuery);
 }
 
 function getDateFilter(period) {

@@ -1,5 +1,4 @@
 const SalonsModel = require ('../models/salons.model');
-const UsersModel = require('../models/users.model');
 const { v4: uuidv4 } = require('uuid');
 
 const salonController = {
@@ -88,12 +87,12 @@ const salonController = {
     // DETAIL D'UN SALON
     getSalonDetails: async (req, res) => {
         try {
-            const { salonId } = req.params;
+            const { id } = req.params;
 
-            const salonBrut = await SalonsModel.findOne({ salonId });
+            const salonBrut = await SalonsModel.findOne({ id });
             console.log('🔵 SALON BRUT players:', JSON.stringify(salonBrut.players, null, 2));
 
-            const salon = await SalonsModel.findOne({ salonId })
+            const salon = await SalonsModel.findOne({ id })
                 .populate('userCreator', 'username email')
                 .populate('players.user', 'username email');
 
@@ -201,7 +200,8 @@ const salonController = {
 
             const salon = new SalonsModel({
                 salonId,
-                creator: userId,
+                name: `Salon PVP ${salonId.substring(0, 8)}`,
+                userCreator: userId,
                 gameType: 'pvp',
                 maxPlayers: 2,
                 status: 'waiting',

@@ -117,16 +117,15 @@ const Header = () => {
                                     À propos
                                 </NavLink>
                             </li>
-                            {user && (
-                                <li className="m-0">
-                                    <NavLink
-                                        to='/listeSalons'
-                                        className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-[#3182ce] active:font-bold"
-                                    >
-                                        Salons
-                                    </NavLink>
-                                </li>
-                            )}
+                            <li className="m-0">
+                                <NavLink
+                                    to='/contact'
+                                    className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-[#3182ce] active:font-bold"
+                                >
+                                    Contact
+                                </NavLink>
+                            </li>
+                            
                         </ul>
                     </div>
 
@@ -198,7 +197,7 @@ const Header = () => {
                             </NavLink>
                         </li>
 
-                        {!user ? (
+                        {!user && (
                             <>
                                 <li className="my-[10px] mx-0">
                                     <NavLink to='/inscription' onClick={toggleMenu}
@@ -213,48 +212,7 @@ const Header = () => {
                                     </NavLink>
                                 </li>
                             </>
-                        ) : (
-                            <>
-                                <li className="my-[10px] mx-0">
-                                    <NavLink to='/creationSalon' onClick={toggleMenu}
-                            className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">
-                                        Création d'un salon
-                                    </NavLink>
-                                </li>
-                                <li className="my-[10px] mx-0">
-                                    <NavLink to='/listeSalons' onClick={toggleMenu}
-                            className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">
-                                        Liste des Salons
-                                    </NavLink>
-                                </li>
-                                <li className="my-[10px] mx-0">
-                                    <NavLink to='/notifications' onClick={toggleMenu}
-                            className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">
-                                        Notifications
-                                    </NavLink>
-                                </li>
-                                <li className="my-[10px] mx-0">
-                                    <NavLink to='/jeu' onClick={toggleMenu}
-                            className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">
-                                        Jouer
-                                    </NavLink>
-                                </li>
-                                <li className="my-[10px] mx-0">
-                                    <button
-                                        onClick={() => {toggleProfile(); toggleMenu();}}
-                                        className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold w-full text-left bg-transparent border-none cursor-pointer max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm"
-                                    >
-                                        👤 Mon Profil
-                                    </button>
-                                </li>
-                            </>
                         )}                   
-                        <li className="my-[10px] mx-0">
-                            <NavLink to='/cgu' onClick={toggleMenu}
-                            className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">
-                                Conditions générales d'utilisation
-                            </NavLink>
-                        </li>
                         <li className="my-[10px] mx-0">
                             <NavLink to='/aPropos' onClick={toggleMenu}
                             className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">
@@ -265,6 +223,12 @@ const Header = () => {
                             <NavLink to='/contact' onClick={toggleMenu}
                             className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">
                                 Contact
+                            </NavLink>
+                        </li>
+                        <li className="my-[10px] mx-0">
+                            <NavLink to='/cgu' onClick={toggleMenu}
+                            className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">
+                                Conditions générales d'utilisation
                             </NavLink>
                         </li>
                     </ul>

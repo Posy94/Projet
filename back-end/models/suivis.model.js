@@ -16,7 +16,7 @@ const suivisSchema = new mongoose.Schema(
             type: Number,
             required: true
         },
-        choicUsed: {
+        choiceUsed: {
             type:String,
             enum: ['rock', 'paper', 'scissors'],
             required: true

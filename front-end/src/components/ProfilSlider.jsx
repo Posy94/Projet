@@ -40,17 +40,19 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
 
             // ✅ VÉRIFIER LE CONTENT-TYPE
             if (response.headers['content-type']?.includes('application/json')) {
+                console.log('✅ Stats reçues:', response.data);
                 setUserStats(response.data);
             } else {
                 console.log('❌ Réponse non-JSON reçue');
                 // Rediriger vers login si HTML d'erreur
-                Navigate('/connexion');
+                navigate('/connexion');
             }
         } catch (error) {
             console.log('❌ Erreur récupération stats:', error.message);
+            console.log('❌ Status:', error.response?.status);
             // Vérifier si c'est un problème d'auth
             if (error.response?.status === 401) {
-                Navigate('/connexion');
+                navigate('/connexion');
             }
         }
     };
@@ -90,6 +92,19 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
             setLoading(false);
         }
     };
+
+    const refreshStats = async () => {
+        if (user) {
+            await fetchUserStats();
+        }
+    };
+
+    useEffect(() => {
+        window.refreshUserStats = refreshStats;
+        return () => {
+            delete window.refreshUserStats;
+        };
+    }, [user]);
 
     const handleUpdateAvatar = async (newAvatar) => {
         try {
@@ -292,34 +307,23 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                             {userStats ? (
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border">
-                                        <div className="text-2xl font-bold text-blue-600">{userStats.partiesJouees}</div>
+                                        <div className="text-2xl font-bold text-blue-600">{userStats.totalGames}</div>
                                         <div className="text-sm text-gray-600">Parties jouées</div>
                                     </div>
 
                                     <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border">
-                                        <div className="text-2xl font-bold text-green-600">{userStats.partiesGagnees}</div>
+                                        <div className="text-2xl font-bold text-green-600">{userStats.wins}</div>
                                         <div className="text-sm text-gray-600">Parties gagnées</div>
                                     </div>
 
-                                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border">
-                                        <div className="text-2xl font-bold text-purple-600">{userStats.salonsCreer || 0}</div>
-                                        <div className="text-sm text-gray-600">Salons créés</div>
+                                    <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg border">
+                                        <div className="text-2xl font-bold text-red-600">{userStats.losses}</div>
+                                        <div className="text-sm text-gray-600">Parties perdues</div>
                                     </div>
 
                                     <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-lg border">
                                         <div className="text-2xl font-bold text-orange-600">{userStats.winRate}%</div>
                                         <div className="text-sm text-gray-600">Taux de victoire</div>
-                                    </div>
-
-                                    <div className="col-span-2 bg-gradient-to-br from-gray-50 to-gray-100 p-4 rounded-lg border">
-                                        <div className="text-sm text-gray-600 mb-1">Membre depuis</div>
-                                        <div className="font-semibold text-gray-800">
-                                            {new Date(userStats.dateInscription).toLocaleDateString('fr-FR', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric'
-                                            })}
-                                        </div>
                                     </div>
                                 </div>
                             ) : (

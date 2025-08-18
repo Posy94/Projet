@@ -18,6 +18,14 @@ const Jeu = () => {
   const [roundResult, setRoundResult] = useState(null);
   const [isAIGame, setIsAIGame] = useState(false);
   const [scores, setScores] = useState([0, 0]);
+  const [gameEnded, setGameEnded] = useState(false);
+  const [gameResult, setGameResult] = useState(null);
+
+  const refreshUserStats = async () => {
+    if (window.refreshUserStats) {
+      window.refreshUserStats();
+    }
+  }
 
   useEffect(() => {
     console.log('🔴 SCORES CHANGED:', scores);
@@ -99,7 +107,12 @@ const Jeu = () => {
 
     socket.on("gameEnd", (data) => {
       console.log('🏁 GAME END REÇU:', data);
-      alert(`🏆 ${data.message}\nScores finaux: Vous ${data.finalScores[0]} - ${data.finalScores[1]} IA`);
+      setGameResult(data);
+      setGameEnded(true);
+
+      setTimeout(() => {
+        refreshUserStats();
+      }, 800);
     });
 
     return () => {
@@ -259,6 +272,31 @@ console.log('🔍 ROUNDRESULT:', roundResult);
       {gameStatus === "finished" && (
         <div className="mt-8 text-center text-green-700 font-semibold">
           🎉 Partie terminée !
+        </div>
+      )}
+
+      {gameEnded && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-2xl text-center shadow-2xl max-w-md mx-4">
+            <h2 className='text-3xl font-bold mb-4'>
+              🏆 {gameResult?.winner === 'player' ? 'VICTOIRE !' : 'DÉFAITE !'}
+            </h2>
+            <p className='text-lg mb-6 text-gray-700'>{gameResult?.message}</p>
+            <div className="flex gap-4 justify-center">
+              <button
+                onClick={() => window.location.href = '/'}
+                className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-colors"
+              >
+                Quitter
+              </button>
+              <button
+                onClick={() => console.log('REJOUER')}
+                className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-colors"
+              >
+                Rejouer
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

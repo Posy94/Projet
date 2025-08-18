@@ -3,6 +3,57 @@ const suiviController = require('../controllers/suivis.controller');
 const RecompensesController = require('../controllers/recompenses.controller');
 const mongoose = require('mongoose');
 
+const savedGameStats = async (salon, finalResult) => {
+    try {
+        console.log('🎮 Sauvegarde de la partie...');
+
+        let gagnant;
+
+        if (finalResult === 'ai') {
+            gagnant = {
+                user: { _id: 'ai', username: 'IA' },
+                choice: 'unknow'
+            };
+        } else if (finalResult === 'player') {
+            const humanPlayer = salon.players[0];
+            
+            gagnant = {
+                user: {
+                    _id: humanPlayer.user.id,
+                    username: humanPlayer.username
+                },
+                choice: humanPlayer.choice || 'unknown'
+            };
+        }
+
+        console.log('🏆 GAGNANT IDENTIFIÉ:', gagnant);
+
+        const gameData = {
+            userId: salon.players[0].userId,
+            gameId: salon._id,
+            choiceUsed: salon.players[0].choice,
+            result: finalResult === 'player' ? 'win' : 'lose',
+            roundNumber: 1,
+            gameDuration: new Date() - salon.createdAt || 30000
+        };
+
+        console.log('🎮 DONNÉES FINALES:', gameData);
+
+        await suiviController.createSuivi(gameData);
+
+        if (finalResult !== 'player') {
+            await updateUserStats(gagnant.user._id, 'win', gagnant.choice);
+        } else {
+            await updateUserStats(salon.players[0].userId, 'lose', salon.players[0].choice);
+        }
+
+        console.log('✅ Partie sauvegardée avec succès');
+
+    } catch (error) {
+        console.error('❌ Erreur lors de la sauvegarde:', error);
+    }
+}
+
 module.exports = (io) => {
     io.on('connection', (socket) => {
         console.log('Utilisateur connecté:', socket.id);
@@ -280,16 +331,18 @@ module.exports = (io) => {
                     });
                     console.log('📤 RÉSULTAT ENVOYÉ AU CLIENT');
 
-                    const maxScore = Math.max(...salon.scores);
+                    const maxScore = Math.max(...salon.scores.map(scoreObj => scoreObj.wins));
                     if (maxScore >= 3) {
                         console.log('🏁 FIN DE PARTIE !');
 
-                        const winner = salon.scores[0] >= 3 ? 'player' : 'ai';
+                        const winner = salon.scores[0].wins >= 3 ? 'player' : 'ai';
+
+                        await savedGameStats(salon, winner);
 
                         socket.emit('gameEnd', {
                             winner: winner,
                             finalScores: salon.scores,
-                            message: winner === 'player' ? 'Félicitations ! Vous avez gagné !' : 'L\IA a gagné ! Réessayez !'
+                            message: winner === 'player' ? 'Félicitations ! Vous avez gagné !' : 'L\'IA a gagné ! Réessayez !'
                         });
 
                         console.log('🏆 GAGNANT:', winner);
@@ -319,7 +372,7 @@ module.exports = (io) => {
 
                         console.log('📤 NEXT ROUND ENVOYÉ');
 
-                    }, 200);
+                    }, 2000)
 
                     return;
                 }
@@ -396,9 +449,15 @@ module.exports = (io) => {
                         salon.status = 'finished';
                         await salon.save();
 
+                        const finalResult = calculateFinalWinner(salon);
+                        console.log('🏁 PARTIE TERMINEE - Résultat final:', finalResult);
+
+                        await savedGameStats(salon, finalResult);
+
                         io.to(salonId).emit('gameEnd', {
                                 message: 'Partie terminée !',
-                                finalResult: calculateFinalWinner(salon)
+                                finalResult: finalResult,
+                                scores: salon.scores || [0, 0]
                         });
 
                         // METTRE A JOUR STATS ET RECOMPENSES

@@ -5,10 +5,22 @@ const createError  = require ('./error')
 const verifieToken = (req, res, next) => {
 // Récupère le jeton (token) JWT à partir des cookies de la requête
   console.log("🔍 Cookies reçus :", req.cookies);  
-  const token = req.cookies.token;
+  let token = req.cookies.token;
 
-// Si le jeton (token) n'est pas présent, 
-// renvoie une erreur 401 (accès refusé)
+// SI PAS DE TOKEN DANS LES COOKIES, CHERCHE DANS LES HEADERS
+if (!token) {
+  const authHeader = req.headers.authorization;
+  console.log("🔍 Authorization header :", authHeader);
+
+  if (authHeader && authHeader.startsWith('Bearer')) {
+    token = authHeader.substring(7);
+    console.log("✅ Token trouvé dans headers");
+  }
+} else {
+  console.log("✅ Token trouvé dans cookies");
+}
+
+// SI TOUJOURS PAS DE TOKEN, ERREUR
   if(!token) {
     console.log("❌ Aucun token trouvé");    
     return next(createError(401, "Acces Denied"));
