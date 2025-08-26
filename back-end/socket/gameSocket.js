@@ -61,6 +61,15 @@ module.exports = (io) => {
         // REJOINDRE UN SALON
         socket.on('joinSalon', async ({ salonId, userId, username }) => {
             try {
+                console.log(`🎯 Tentative de rejoindre salon: ${salonId} par user: ${userId}`);
+                
+                // REJOINDRE IMMEDIATEMENT LE SALON
+                await socket.join(salonId);
+                console.log(`🏠 Socket ${socket.id} a rejoint la room: ${salonId}`);
+
+                // VERIFIER QUE LE SOCKET EST BIEN DANS LE SALON
+                const socketsInSalonBefore = await io.in(salonId).fetchSockets();
+                console.log(`🔍 Sockets dans la room AVANT traitement: ${socketsInSalonBefore.length}`);
 
                 console.log('🔵 AVANT POPULATE - salonId:', salonId);
 
@@ -96,13 +105,18 @@ module.exports = (io) => {
 
         // FONCTION MULTIJOUEUR
         async function handleMultiplayerSalon(socket, salon, userId, username, salonId) {
-            if (salon.players.length >= salon.maxPlayers) {
-                return socket.emit('error', 'Salon complet');
-            }
+            console.log('🎮 Gestion salon multijoueur');
+
             // VERIFIER SI LE JOUEUR N'EST PAS DEJA DANS LE SALON
-            const isAlreadyInSalon = salon.players.some(
-                player => player.user._id.toString() === userId
-            );
+            const isAlreadyInSalon = salon.players.some(player => {
+                // VERIFIER SI PLAYER.USER EXISTE ET A UN _ID
+                if (player.user && player.user._id) {
+                    return player.user._id.toString() === userId;
+                }
+                // SI PAS DE POPULATE, COMPARER DIRECTEMENT AVEC L'OBJECTID
+                return player.user && player.user.toString() === userId;
+            });
+
             if (!isAlreadyInSalon) {
                 salon.players.push({
                     user: userId,
@@ -111,19 +125,45 @@ module.exports = (io) => {
                     socketId: socket.id
                 });
                 await salon.save();
+                console.log(`✅ Joueur ${username} ajouté au salon`);
+            } else {
+                console.log(`⚠️ Joueur ${username} déjà dans le salon`);
             }
-            // REJOINDRE LE SALON SOCKET.IO
-            socket.join(salonId);
+
             socket.userId = userId;
             socket.salonId = salonId;
-            // INFORMER TOUS LES JOUEURS DU SALON
+
+            // VERIFIER LE SALON
+            const socketsInSalon = await io.in(salonId).fetchSockets();
+            console.log(`🔍 Nombre de sockets dans la room ${salonId}: ${socketsInSalon.length}`);
+
+            // RECUPERER LE SALON MIS A JOUR
             const updatedSalon = await SalonsModel.findOne({ salonId })
-                .populate('players.user', 'username email')
-                
+                .populate('players.user', 'username email')                
                 .populate('userCreator', 'username email');
+
+            // INFORMER TOUS LES JOUEURS
             io.to(salonId).emit('salonUpdated', updatedSalon);
+            io.to(salonId).emit('player-joined', { salon: updatedSalon });
+
             console.log(`${username} a rejoint le salon ${salonId}`);
             
+            // DEMARRER SI LE SALON EST PLEIN
+            if (updatedSalon.players.length >= updatedSalon.maxPlayers) {
+                console.log('🎮 Salon plein ! Démarrage du jeu...');
+
+                // METTRE A JOUR LE STATUT DU SALON
+                updatedSalon.status = 'playing';
+                await updatedSalon.save();
+
+                // DEMARRER LA PARTIE
+                io.to(salonId).emit('game-start', {
+                    salon: updatedSalon,
+                    message: 'La partie commence !'
+                });
+
+                console.log(`🚀 Émission de game-start pour salon: ${salonId}`);
+            }
         }
 
         // FONCTION IA
@@ -216,7 +256,12 @@ module.exports = (io) => {
 
                 console.log('🔍 Salon trouvé:', salon ? 'OUI' : 'NON');
 
-                const playerIndex = salon.players.findIndex(p => p.user.toString() === userId);
+                // 🧹 Nettoyer les joueurs sans user
+                salon.players = salon.players.filter(p => p.user && p.user._id);
+
+                const playerIndex = salon.players.findIndex(p =>
+                    p.user && p.user._id && p.user._id.toString() === userId.toString()
+                );
                 console.log('🔍 PlayerIndex trouvé:', playerIndex);
 
                 if (playerIndex !== -1) {
@@ -240,9 +285,7 @@ module.exports = (io) => {
                     console.log('🔍 Nombre de joueurs:', salon.players.length);
                     console.log('🔍 GameType:', salon.gameType);
 
-                    const canStart = salon.gameType === 'ai' ?
-                        allReady && salon.players.length === 2 :
-                        allReady && salon.players.length === recompensesModel.maxPlayers;
+                    const canStart = allReady && salon.players.length === salon.maxPlayers;
 
                     console.log('🔍 Peut démarrer ?', canStart);
 

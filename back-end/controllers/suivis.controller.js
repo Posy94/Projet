@@ -34,7 +34,7 @@ const suivisController = {
             await updateUserStats(userId, result, choiceUsed);
 
             // VERIFIER LES NOUVEAUX BADGES A DEBLOQUER
-            await recompensesController.checkAndUnlockBadges(userId);
+            // await recompensesController.checkAndUnlockBadges(userId);
 
             return suivi;
 
@@ -271,7 +271,7 @@ async function updateUserStats(userId, result, choiceUsed) {
     // INCREMENTER LES STATISTIQUES PAR CHOIX
     updateQuery.$inc[`stats.choices.${choiceUsed}`] = 1;
 
-    await UsersModel.findByAndUpadte(userId, updateQuery);
+    await UsersModel.findByIdAndUpdate(userId, updateQuery, { new: true });
 }
 
 function getDateFilter(period) {

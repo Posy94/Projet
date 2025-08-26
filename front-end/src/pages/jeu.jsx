@@ -231,7 +231,7 @@ console.log('🔍 ROUNDRESULT:', roundResult);
             </>
           ) : (
             <p className="mt-4 text-blue-700 font-medium">
-              {isAIGame ? "🤖 L'IA réfléchit..." : "En attente de l'autre joueur..."}
+              {isAIGame ? "🤖 Fin du round..." : "En attente de l'autre joueur..."}
             </p>
           )}
         </div>

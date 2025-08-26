@@ -35,27 +35,73 @@ const salonController = {
     joinSalon: async (req, res) => {
         try {
             const { salonId } = req.params;
-            const salon = await SalonsModel.findOne({ salonId }).populate('players.user creator');
+            const salon = await SalonsModel.findOne({ salonId }).populate('players.user userCreator');
 
             if (!salon) {
                 return res.status(404).json({ error: 'Salon introuvable' });
             }
 
-            if (salon.participants.length >= salon.maxParticipants) {
+            if (salon.players.length >= salon.maxPlayers) {
                 return res.status(400).json({ error: 'Salon complet' });
             }
 
             // VERIFIER SI LE JOUEUR EST DEJA DANS LE SALON
-            const isAlreadyInSalon = salon.participants.some(
-                participant => participant._id.toString() === req.user.id
-            );
+            const isAlreadyInSalon = salon.players.some(player => {
+                // VERIFIER SI PLAYER.USER EXISTE ET A UN _ID
+                if (player.user && player.user._id) {
+                    return player.user._id.toString() === userId;
+                }
+                // SI PAS DE POPULATE, COMPARER DIRECTEMENT AVEC L'OBJECTIF
+                return player.user && player.user.toString() === userId;
+            });
 
             if (isAlreadyInSalon) {
                 return res.status(400).json({ error: 'Vous êtes déjà dans ce salon' });
             }
 
-            salon.particpants.push(req.user.id);
+            salon.players.push({
+                user: req.user.id,
+                score: 0,
+                isReady: false
+            });
+
+            const isSalonFull = salon.players.length >= salon.maxPlayers;
+
+            if (isSalonFull) {
+                salon.status = 'playing';
+                console.log('🎮 Salon plein ! Démarrage du jeu...');
+            }
+            
             await salon.save();
+
+            const io = req.app.get('io');
+            if (io) {
+                const updatedSalon = await SalonsModel.findOne({ salonId }).populate('players.user userCreator')
+
+                // 🆕 VÉRIFIER COMBIEN DE CLIENTS SONT CONNECTÉS
+                const socketsInRoom = await io.in(salonId).fetchSockets();
+                console.log(`🔍 Nombre de sockets dans la room ${salonId}:`, socketsInRoom.length);
+
+                io.to(salonId).emit('player-joined', {
+                    salon: updatedSalon,
+                    newPlayer: req.user
+                });
+
+                // SI SALON PLEIN, DEMARRER LE JEU
+                if (isSalonFull) {
+                    console.log('🚀 Émission de game-start pour salon:', salonId);
+                    console.log('🔍 Données émises:', { salon: updatedSalon, message: 'La partie commence !' });
+
+                    io.to(salonId).emit('game-start', {
+                        salon: updatedSalon,
+                        message: 'La partie commence !'
+                    });
+
+                    console.log('✅ game-start émis avec succès');
+                }
+            } else {
+                console.log('⚠️ Socket.IO non disponible');
+            }            
 
             res.json({
                 message: 'Vous avez rejoint le salon',
@@ -63,6 +109,7 @@ const salonController = {
             })
 
         } catch (error) {
+            console.error('❌ Erreur joinSalon:', error);
             res.status(400).json({ error: error.message });
         }
     },

@@ -16,6 +16,14 @@ const io = socketIo(server, {
     }
 });
 
+// IO ATTACHE AUX REQUETES
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
+
+app.set('io', io);
+
 require('./socket/gameSocket')(io);
 
 // PORT

@@ -21,7 +21,7 @@ class RecompensesController {
             const userRecompenses = await UserRecompense.find({ userId });
             const userStats = user.stats || {};
 
-            const recompenseMap = new Map(UserRecompenses.map(ur => [ur.recompenseId, ur]));
+            const recompenseMap = new Map(UserRecompense.map(ur => [ur.recompenseId, ur]));
 
             const recompensesWithProgression = recompenses.map(recompense => {
                 const userRecompense = recompenseMap.get(recompense.id);
