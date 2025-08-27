@@ -54,6 +54,50 @@ const savedGameStats = async (salon, finalResult) => {
     }
 }
 
+const savedGameStatsPVP = async (salon, result) => {
+    try {
+        console.log('🎮 Sauvegarde de la partie PVP...');
+        console.log('🎯 RESULT REÇU:', result); // ← AJOUTE ce log
+
+        const winner = result.winner;
+        const loser = result.loser;
+
+        // Sauvegarde pour le GAGNANT
+        const winnerData = {
+            userId: winner.playerId,
+            gameId: salon._id,
+            choiceUsed: salon.players.find(p => p.user.toString() === winner.playerId.toString())?.choice || 'unknown',
+            result: 'win',
+            roundNumber: salon.currentRound || 1,
+            gameDuration: new Date() - salon.createdAt || 30000
+        };
+
+        console.log('🏆 DONNÉES WINNER:', winnerData);
+
+        await suiviController.createSuivi(winnerData);
+
+        // Sauvegarde pour le PERDANT
+        const loserData = {
+            userId: loser.playerId,
+            gameId: salon._id,
+            choiceUsed: salon.players.find(p => p.user.toString() === loser.playerId.toString())?.choice || 'unknown',
+            result: 'lose',
+            roundNumber: salon.currentRound || 1,
+            gameDuration: new Date() - salon.createdAt || 30000
+        };
+
+        console.log('🥺 DONNÉES LOSER:', loserData);
+
+        await suiviController.createSuivi(loserData);
+
+        console.log('✅ Partie PVP sauvegardée avec succès');
+
+    } catch (error) {
+        console.error('❌ Erreur lors de la sauvegarde PVP:', error);
+    }
+}
+
+
 module.exports = (io) => {
     io.on('connection', (socket) => {
         console.log('Utilisateur connecté:', socket.id);
@@ -320,7 +364,12 @@ module.exports = (io) => {
             try {
                 const salon = await SalonsModel.findOne({ salonId });
                 console.log('🎯 SALON TROUVÉ:', salon ? 'OUI' : 'NON');
-                const playerIndex = salon.players.findIndex(p => p.user.toString() === userId);
+
+                const playerIndex = salon.players.findIndex(p => {
+                    if (!p?.user?._id || !userId) return false;
+                    return p.user._id.toString() === userId.toString();
+                });
+
 
                 if (playerIndex === -1) {
                     return socket.emit('error', 'Joueur non trouvé dans ce salon');
@@ -420,6 +469,7 @@ module.exports = (io) => {
                     return;
                 }
 
+                // GESTION PVP
                 // INFORMER QUE LE JOUEUR A FAIT SON CHOIX SANS LE REVELER
                 socket.to(salonId).emit('playerMadeChoice', {
                     playerId: userId,
@@ -433,6 +483,38 @@ module.exports = (io) => {
                     const result = calculateWinner(salon.players);
                     const roundEndTime = new Date();
                     const gameDuration = roundEndTime - salon.roundStartTime;
+
+                    // MISE A JOUR DES SCORES PVP
+                    console.log('📊 AVANT - Scores PVP:', salon.scores);
+
+                    if (!salon.scores[0]) {
+                        salon.scores[0] = {
+                            wins: 0,
+                            user: salon.players[0].user
+                        };
+                        console.log('🆕 Score 0 créé:', salon.scores[0]);
+                        console.log('🆕 Player 0 user:', salon.players[0].user);
+                    }
+                    
+                    if (!salon.scores[1]) {
+                        salon.scores[1] = {
+                            wins: 0,
+                            user: salon.players[1].user
+                        };
+                    }
+
+                    if (result === 'player1') {
+                        salon.scores[0].wins++;
+                    } else if (result === 'player2') {
+                        salon.scores[1].wins++;
+                    }
+
+                    console.log('📊 APRÈS - Scores PVP:', salon.scores);
+                    await salon.save();
+
+                    console.log('🔍 SCORES APRÈS SAVE:', salon.scores);
+                    console.log('🔍 SALON ID:', salon._id);
+
 
                     // ENREGISTRER LES SUIVIS POUR CHAQUE JOUEUR
                     for (let i = 0; i < salon.players.length; i++) {
@@ -460,48 +542,83 @@ module.exports = (io) => {
                         });
                     }
 
+                    
+
                     // ENVOYER LE RESULTAT A TOUS LES JOUEURS
-                    io.to(salonId).emit('roundResult', {
-                        result,
-                        choices: salon.players.map(p => ({
-                            userId:p.user,
-                            choice: p.choice
-                        })),
-                        round: salon.currentRound
+                    salon.players.forEach((player, index) => {
+                        const playerSocket = io.sockets.sockets.get(player.socketId);
+                        if (playerSocket) {
+                            let personalResult;
+
+                            if (result === 'draw') {
+                                personalResult = 'draw';
+                            } else if (result === 'player1' && index === 0) {
+                                personalResult = 'win';
+                            } else if (result === 'player2' && index === 1) {
+                                personalResult = 'win';
+                            } else {
+                                personalResult = 'lose';
+                            }
+
+                            playerSocket.emit('roundResult', {
+                                result: personalResult,
+                                choices: salon.players.map(p => ({
+                                    userId: p.user,
+                                    choice: p.choice
+                                })),
+                                round: salon.currentRound,
+                                scores: [
+                                    salon.scores[0]?.wins || 0,
+                                    salon.scores[1]?.wins || 0
+                                ]
+                            });
+                        }
                     });
 
-                    // PREPARER LE PROCHAIN ROUND OU FINIR LA PARTIE
-                    if (salon.currentRound < salon.maxRounds) {
-                        // PROCHAIN ROUND
-                        setTimeout(async () => {
-                            salon.currentRound += 1;
-                            salon.players.forEach(p => {
-                                p.choice = null;
-                                p.ready = false;
-                            });
-                            salon.roundStartTime = new Date();
-                            await salon.save();
+                    console.log('🏆 Score 1:', salon.scores[0]);
+                    console.log('🏆 Score 2:', salon.scores[1]);
 
-                            io.to(salonId).emit('nextRound', {
-                                round: salon.currentRound,
-                                message: `Round ${salon.currentRound}/${salon.maxRounds}`
-                            });
-                        }, 3000); // 3 SECONDES AVANT LE PROCHAIN ROUND
-                    } else {
-                        // PARTIE TERMINEE
+                    let finalResult = null;
+                    const currentMaxWins = Math.max(salon.scores[0]?.wins || 0, salon.scores[1]?.wins || 0);
+                    const MAX_WINS = 3;
+
+                    console.log('🏆 MaxWins atteintes:', currentMaxWins);
+                    console.log('👥 ENVOI gameEnd À TOUS LES JOUEURS DU SALON');
+                    console.log('📡 Salon ID:', salonId);
+                    console.log('🎮 Résultat final:', finalResult);
+
+                    console.log('✅ gameEnd envoyé à tous les joueurs connectés au salon !');
+
+                    // 🔄 LOGIQUE SIMPLIFIÉE - UNE SEULE VÉRIFICATION
+                    console.log('🔍 VÉRIFICATION CONDITION:', currentMaxWins, '>=', 3, '=', currentMaxWins >= 3);
+
+                    if (currentMaxWins >= MAX_WINS) {
+                        console.log(`🏁 PARTIE TERMINÉE - ${currentMaxWins} >= ${MAX_WINS}`);
+
+                        console.log('🎯 === DEBUG AVANT calculateFinalWinner ===');
+                        console.log('📊 salon:', salon);
+                        console.log('📊 salon.scores:', salon?.scores);
+                        console.log('👥 salon.players:', salon?.players);
+
+                        finalResult = calculateFinalWinner(salon);
+                        console.log('🎯 Debug calculateFinalWinner:');
+                        console.log('🏆 finalResult:', finalResult);
+                        console.log('❓ finalResult est null?', finalResult === null);
+
+                        if (!finalResult) {
+                            console.log('❌ ERREUR: calculateFinalWinner retourne null !');
+                            // Protection d'urgence
+                            finalResult = {
+                                winner: { playerId: salon?.players?.[0]?.user, username: 'Joueur 1' },
+                                loser: { playerId: salon?.players?.[1]?.user, username: 'Joueur 2' },
+                                finalScore: { winner: 1, loser: 0 }
+                            };
+                        }
+
+                        // 🏁 PARTIE TERMINEE
                         salon.status = 'finished';
                         await salon.save();
-
-                        const finalResult = calculateFinalWinner(salon);
-                        console.log('🏁 PARTIE TERMINEE - Résultat final:', finalResult);
-
-                        await savedGameStats(salon, finalResult);
-
-                        io.to(salonId).emit('gameEnd', {
-                                message: 'Partie terminée !',
-                                finalResult: finalResult,
-                                scores: salon.scores || [0, 0]
-                        });
+                        await savedGameStatsPVP(salon, finalResult);
 
                         // METTRE A JOUR STATS ET RECOMPENSES
                         const updateStatsAndRecompenses = async (winId, loseId, winMovePlayed) => {
@@ -514,10 +631,66 @@ module.exports = (io) => {
                                     loseRecompenses
                                 };
                             } catch (error) {
-                                console.error('Erreur lors de la mise à jour des récompenses:', error);                                
+                                console.error('Erreur lors de la mise à jour des récompenses:', error);
                             }
                         };
+
+                        // Appeler la fonction de récompenses
+                        // const recompensesData = await updateStatsAndRecompenses(
+                        //     finalResult.winner.playerId,
+                        //     finalResult.loser.playerId,
+                        //     winner === 'player1' ? choice1 : choice2
+                        // );
+
+                        // Envoyer gameEnd aux clients
+                        console.log('📡 ENVOI gameEnd avec ces données:');
+                        console.log('🏆 winner:', finalResult.winner);
+                        console.log('🆔 winnerId:', finalResult.winner?.playerId?.toString());
+                        console.log('🆔 loserId:', finalResult.loser?.playerId?.toString());
+
+                        io.to(salonId).emit('gameEnd', {
+                            message: 'Partie terminée !',
+                            winner: finalResult.winner,
+                            winnerId: finalResult.winner?.playerId?.toString(),
+                            loserId: finalResult.loser?.playerId?.toString(),
+                            // 🎯 AJOUTE ÇA POUR DEBUG
+                            debug: {
+                                winnerName: finalResult.winner?.username,
+                                loserName: finalResult.loser?.username
+                            }
+                        });
+                        console.log('✅ gameEnd envoyé à tous les joueurs connectés au salon !');
+                        return;
+
+                    } else {
+                        console.log(`🔍 VÉRIFICATION CONDITION: ${currentMaxWins} >= ${MAX_WINS} = false`);
+
+                        // 🔄 PROCHAIN ROUND (supprime la vérification maxRounds)
+                        setTimeout(async () => {
+                            console.log('⏰ EXÉCUTION DU PROCHAIN ROUND !');
+                            salon.currentRound += 1;
+                            console.log('🔄 Nouveau round:', salon.currentRound);
+
+                            salon.players.forEach(p => {
+                                p.choice = null;
+                                p.ready = false;
+                            });
+                            salon.roundStartTime = new Date();
+                            await salon.save();
+
+                            console.log('📡 ENVOI nextRound à tous les joueurs');
+                            io.to(salonId).emit('nextRound', {
+                                round: salon.currentRound,
+                                message: `Round ${salon.currentRound}`,
+                                scores: [
+                                    salon.scores[0]?.wins || 0,
+                                    salon.scores[1]?.wins || 0
+                                ]
+                            });
+                            console.log('✅ nextRound envoyé !');
+                        }, 3000); // 3 SECONDES AVANT LE PROCHAIN ROUND
                     }
+                    console.log('🔍 FIN DE LA LOGIQUE DE JEU');
                 }
             } catch (error) {
                 socket.emit('error', error.message);
@@ -619,5 +792,54 @@ function calculateWinner(players) {
 }
 
 function calculateFinalWinner(salon) {
-    return 'player1';
+    console.log('🎯 === CALCULATE FINAL WINNER ===');
+    console.log('🔍 SALON ID reçu:', salon._id);
+    console.log('📊 Scores reçus dans calculate:', salon.scores);
+    console.log('🏆 CALCUL DU VAINQUEUR:');
+    console.log('📊 Scores complets:', salon.scores);
+    console.log('👥 Players:', salon.players.map(p => p.user));
+
+    const player1Id = salon.players[0].user.toString();
+    const player2Id = salon.players[1].user.toString();    
+    
+    const player1Score = salon.scores.find(score =>
+        score.user && score.user.toString() === player1Id.toString()
+    );
+    const player2Score = salon.scores.find(score =>
+        score.user && score.user.toString() === player2Id.toString() 
+    );
+
+
+    console.log('🎯 player1Score trouvé:', player1Score);
+    console.log('🎯 player2Score trouvé:', player2Score);
+    
+    const player1Wins = player1Score?.wins || 0;
+    const player2Wins = player2Score?.wins || 0;
+    
+    console.log('🏆 Victoires J1:', player1Wins);
+    console.log('🏆 Victoires J2:', player2Wins);
+
+    if (player1Wins > player2Wins) {
+        return {
+            winner: { playerId: salon.players[0].user, username: 'Joueur 1' },
+            loser: { playerId: salon.players[1].user, username: 'Joueur 2' },
+            finalScore: { winner: player1Wins, loser: player2Wins }
+        };
+    } else if (player2Wins > player1Wins) {
+        return {
+            winner: { playerId: salon.players[1].user, username: 'Joueur 2' },
+            loser: { playerId: salon.players[0].user, username: 'Joueur 1' },
+            finalScore: { winner: player2Wins, loser: player1Wins }
+        };
+    } else {
+        // Égalité - on peut décider arbitrairement ou gérer différemment
+        return {
+            winner: { playerId: salon.players[0].user, username: 'Joueur 1' },
+            loser: { playerId: salon.players[1].user, username: 'Joueur 2' },
+            finalScore: { winner: player1Wins, loser: player2Wins }
+        };
+    }
 }
+
+
+

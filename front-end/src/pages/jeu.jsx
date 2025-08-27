@@ -8,7 +8,6 @@ const socket = io("http://localhost:8000");
 const Jeu = () => {
   
   const { user, loading } = useUser();
-
   const { salonId } = useParams();
   const [salon, setSalon] = useState(null);
   const [gameStatus, setGameStatus] = useState("waiting");
@@ -106,14 +105,54 @@ const Jeu = () => {
     });
 
     socket.on("gameEnd", (data) => {
-      console.log('🏁 GAME END REÇU:', data);
-      setGameResult(data);
-      setGameEnded(true);
+    console.log('🏁 GAME END REÇU:', data);
+    
+    let personalResult = 'unknown';
 
-      setTimeout(() => {
+    // 🚨 FORCE LA CONVERSION EXPLICITE
+    const winnerId = String(data.winnerId || '');
+    const loserId = String(data.loserId || '');
+    const userId = String(user?.id || '');
+    
+    console.log('🔍 CONVERSIONS FORCÉES:');
+    console.log('   winnerId:', winnerId);
+    console.log('   loserId:', loserId);
+    console.log('   userId:', userId);
+    
+    if (winnerId && loserId && userId) {
+        console.log('✅ ENTRÉE DANS LA CONDITION !');
+        
+        console.log('🔍 COMPARAISONS:');
+        console.log('   userId === winnerId?', userId === winnerId);
+        console.log('   userId === loserId?', userId === loserId);
+
+        if (userId === winnerId) {
+            personalResult = 'win';
+            console.log('🏆 VICTOIRE !');
+        } else if (userId === loserId) {
+            personalResult = 'lose';
+            console.log('💔 DÉFAITE !');
+        }
+    } else {
+        console.log('❌ DONNÉES MANQUANTES après conversion');
+    }
+
+    console.log('🎯 RÉSULTAT FINAL:', personalResult);
+    
+    const gameEndData = {
+        ...data,
+        result: personalResult
+    };
+
+    setGameResult(gameEndData);
+    setGameEnded(true);
+
+    setTimeout(() => {
         refreshUserStats();
-      }, 800);
-    });
+    }, 800);
+});
+
+
 
     return () => {
       socket.off('salonUpdated');
@@ -167,21 +206,40 @@ const Jeu = () => {
     setHasChosen(true);
   };
 
+  const getResultMessage = () => {
+  switch(gameResult?.result) {
+    case 'win': return '🏆 VICTOIRE !';
+    case 'draw': return '🤝 ÉGALITÉ !';
+    case 'lose': return '💔 DÉFAITE !';
+    default: return '🤔 Résultat inconnu';
+  }
+};
+
   if (!salon) return <div className="text-center mt-10">Chargement du salon...</div>
 
-  // ✅ AVANT LE RETURN, AJOUTE :
-console.log('🔍 TYPE DE SCORES:', typeof scores, scores);
-console.log('🔍 IS ARRAY SCORES:', Array.isArray(scores));
-console.log('🔍 ROUNDRESULT:', roundResult);
+  console.log('🔍 SALON BRUT:', salon);
+  console.log('🔍 TOUS LES PLAYERS:', salon?.players);
+  console.log('🔍 PLAYERS DÉTAIL:', salon?.players?.map((p, i) => ({
+    index: i,
+    hasUser: !!p?.user,
+    username: p?.user?.username,
+    userId: p?.user?._id,
+    rawPlayer: p
+  })));
 
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h2 className="text-2xl font-bold text-center mb-4">Salon : {salon?.name || 'Chargement...'}</h2>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
-        {salon?.players?.filter(p => p != null).map((p, index) => {
-          const displayName = p?.username || p?.user?.username || `Joueur ${index + 1}`;
-          const playerId = p?.userId || p?.user?._id || `temp-${index}`;
+        {salon?.players
+          ?.filter(p => {
+            console.log('🔍 PLAYER CHECK:', p);
+            return p?.user && p?.user?._id;
+          })
+          ?.map((p, index) => {
+            const displayName = p.user.username;
+            const playerId = p.user._id;
 
           return (
             <div
@@ -240,34 +298,84 @@ console.log('🔍 ROUNDRESULT:', roundResult);
       {roundResult && (
         <div className="mt-6 text-center">
           <h3 className="text-xl font-bold">Résultat du Round</h3>
+
           <p className="text-lg">
-            {
-              roundResult.result === "draw"
+            {roundResult.result === "draw"
                 ? "Egalité, personne ne gagne ce round !"
-                : roundResult.result === "player1"
-                ? "Vous gagnez un round !"
-                : "L'IA gagne un round !"
+                : salonId
+                ? // MODE PVP - VERIFIER QUI A GAGNE
+                  (() => {
+                  console.log('🔍 ROUND RESULT COMPLET:', roundResult);
+                  console.log('🔍 roundResult.result:', roundResult.result);
+                  console.log('🔍 salon.players:', salon?.players);
+                  const winnerId = roundResult.result;
+                  const winner = salon?.players?.find(p => {
+                    console.log('🔍 COMPARAISON:', {
+                      playerUserId: p?.user?._id,
+                      playerUserId2: p?.userId,
+                      winnerId: winnerId,
+                      match1: (p?.user?._id === winnerId),
+                      match2: (p?.userId === winnerId)
+                    });
+                    return (p?.user?._id || p?.userId) === winnerId;
+                  });
+
+                  console.log('🔍 WINNER TROUVÉ:', winner);
+                  const winnerName = winner?.user?.username || winner?.username || 'Joueur';
+                  console.log('🔍 WINNER NAME:', winnerName);
+
+                  return winnerId === user?.id
+                    ? "🎉 Vous gagnez ce round !"
+                    : `${winnerName} gagne ce round !`;
+                })()
+                : // MODE IA
+                  roundResult.result === "player1"
+                  ? "🎉 Vous gagnez ce round !"
+                  : "🤖 L'IA gagne ce round !"
             }
           </p>
+
           <div className="mt-2">
-            {roundResult.choices?.map(c => {
-              <p key={c.userId}>
-                {c.userId === 'AI' ? 'IA' :
-                  salon?.players?.find(p => (p?.user?._id || p?.userId) === c.userId)?.user?.username ||                  
-                  salon?.players?.find(p => (p?.user?._id || p?.userId) === c.userId)?.username ||
-                  'Joueur'                
-                }: {c.choice === "rock" ? "🪨" : c.choice === "paper" ? "📄" : "✂️"}
-              </p>
-            })}
+            <h4 className="font-semibold mb-2">Choix des jouers :</h4>
+              {roundResult.choices?.map(c => {
+                const playerInfo = c.userId === 'AI'
+                  ? { name: '🤖 IA', isCurrentUser: false }
+                  : (() => {
+                    const player = salon?.players?.find(p => 
+                    (p?.user?._id || p?.userId) === c.userId
+                    );
+                    const name = player?.user?.username || player?.username || 'Joueur';
+                    const isCurrentUser = c.userId === user?.id;
+                    return {
+                      name: isCurrentUser ? '👤 Vous' : name,
+                      isCurrentUser
+                    }
+                  })();
+                return (
+                  <p key={c.userId} className={`text-lg ${playerInfo.isCurrentUser ? 'font-bold text-blue-600' : ''}`}>
+                    {playerInfo.name}: {c.choice === "rock" ? "🪨" : c.choice === "paper" ? "📄" : "✂️"}
+                  </p>
+                );
+              })}
           </div>
         </div>
       )}
 
       <div>
         <h3>📊 Scores</h3>
-        <p>Vous: {scores[0] || 0} - IA: {scores[1] || 0}</p>
+        {salonId && salon?.players ? (
+          // Mode PVP avec vérification
+          <p>
+            {salon.players[0]?.user?.username || 'Joueur 1'}: {scores[0] || 0} -
+            {salon.players[1]?.user?.username || 'Joueur 2'}: {scores[1] || 0}
+          </p>
+        ) : (
+          // Mode IA
+          <p>Vous: {scores[0] || 0} - IA: {scores[1] || 0}</p>
+        )}
         <p>🎯 Premier à 3 victoires gagne !</p>
       </div>
+
 
       {gameStatus === "finished" && (
         <div className="mt-8 text-center text-green-700 font-semibold">
@@ -279,7 +387,7 @@ console.log('🔍 ROUNDRESULT:', roundResult);
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-2xl text-center shadow-2xl max-w-md mx-4">
             <h2 className='text-3xl font-bold mb-4'>
-              🏆 {gameResult?.winner === 'player' ? 'VICTOIRE !' : 'DÉFAITE !'}
+              {getResultMessage()}
             </h2>
             <p className='text-lg mb-6 text-gray-700'>{gameResult?.message}</p>
             <div className="flex gap-4 justify-center">
