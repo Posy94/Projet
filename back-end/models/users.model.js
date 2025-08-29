@@ -78,7 +78,8 @@ const usersSchema = mongoose.Schema(
         },
         bio: {
             type: String,
-            default: null
+            default: null,
+            maxLength: 50
         }
 
     }, { timestamps: true }

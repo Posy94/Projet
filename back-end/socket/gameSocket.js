@@ -102,6 +102,11 @@ module.exports = (io) => {
     io.on('connection', (socket) => {
         console.log('Utilisateur connecté:', socket.id);
 
+        const populateSalon = () => [
+            { path: 'players.user', select: 'username email' },
+            { path: 'userCreator', select: 'username email' }
+        ]
+
         // REJOINDRE UN SALON
         socket.on('joinSalon', async ({ salonId, userId, username }) => {
             try {
@@ -118,8 +123,7 @@ module.exports = (io) => {
                 console.log('🔵 AVANT POPULATE - salonId:', salonId);
 
                 const salon = await SalonsModel.findOne({ salonId })
-                    .populate('players.user', 'username email')
-                    .populate('userCreator', 'username email');
+                    .populate(populateSalon());
 
                 console.log('🟢 APRÈS POPULATE - salon:', JSON.stringify(salon, null, 2));
                 console.log('🟡 PLAYERS DÉTAILLÉS:', salon?.players?.map(p => ({
@@ -255,6 +259,7 @@ module.exports = (io) => {
                 if (!aiPlayer) {
                     console.log('🤖 AJOUT de l\'IA...');
                     salon.players.push({
+                        user: null,
                         userId: 'ai',
                         username: 'IA',
                         isAI: true,
@@ -298,10 +303,16 @@ module.exports = (io) => {
             try {
                 const salon = await SalonsModel.findOne({ salonId });
 
-                console.log('🔍 Salon trouvé:', salon ? 'OUI' : 'NON');
+                console.log('🔍 SALON DIRECT:', salon.players.map(p => ({ userId: p.userId, username: p.username })));
 
-                // 🧹 Nettoyer les joueurs sans user
-                salon.players = salon.players.filter(p => p.user && p.user._id);
+                salon.players = salon.players.filter(p =>
+                    (p.user && p.user._id) || p.userId === 'ai'  // ✅ Garde l'IA !
+                );
+
+                // 🔍 DEBUG - Au début de playerReady
+                console.log('🔍 DÉBUT playerReady - salon.players:', salon.players.map(p => ({ userId: p.userId, username: p.username })));
+                console.log('🔍 DÉBUT playerReady - salon.scores:', salon.scores.map(s => ({ user: s.user, wins: s.wins })));
+
 
                 const playerIndex = salon.players.findIndex(p =>
                     p.user && p.user._id && p.user._id.toString() === userId.toString()
@@ -313,6 +324,7 @@ module.exports = (io) => {
 
                     if (salon.gameType === 'ai') {
                         console.log('🤖 Salon IA détecté - Auto-ready IA');
+                        console.log('🔍 Tous les players avant recherche IA:', salon.players.map(p => ({ userId: p.userId, username: p.username })));
                         const aiPlayerIndex = salon.players.findIndex(p => p.userId === 'ai');
                         console.log('🤖 AI PlayerIndex:', aiPlayerIndex);
                         if (aiPlayerIndex !== -1) {
@@ -348,8 +360,7 @@ module.exports = (io) => {
                     }
 
                     const updatedSalon = await SalonsModel.findOne({ salonId })
-                        .populate('players.user', 'username email')
-                        .populate('userCreator', 'username email');
+                        .populate(populateSalon());
                     io.to(salonId).emit('salonUpdated', updatedSalon);
                 }
             } catch (error) {
