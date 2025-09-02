@@ -1,4 +1,4 @@
-const { RecompenseDefinittion, UserRecompense } = require('../models/recompenses.model');
+const { RecompenseDefinition, UserRecompense } = require('../models/recompenses.model');
 const UsersModel = require('../models/users.model');
 
 class RecompensesController {
@@ -17,7 +17,7 @@ class RecompensesController {
                 });
             }
 
-            const recompenses = await RecompenseDefinittion.find({ actif: true }).sort({ category: 1, points: 1 });
+            const recompenses = await RecompenseDefinition.find({ actif: true }).sort({ category: 1, points: 1 });
             const userRecompenses = await UserRecompense.find({ userId });
             const userStats = user.stats || {};
 
@@ -146,7 +146,7 @@ class RecompensesController {
         const user = await UsersModel.findById(userId);
         if (!user || !user.stats) return [];
 
-        const recompenses = await RecompenseDefinittion.find({ actif: true });
+        const recompenses = await RecompenseDefinition.find({ actif: true });
         const newRecompenses = [];
 
         for (const recompense of recompenses) {

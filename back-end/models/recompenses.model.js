@@ -41,7 +41,7 @@ const recompenseDefinitionSchema = new mongoose.Schema(
             },
             movePlayed: {
                 type: String,
-                enum: ['pierre', 'feuille', 'Ciseaux'],
+                enum: ['pierre', 'feuille', 'ciseaux'],
                 required: false
             }
         },
@@ -60,7 +60,7 @@ const recompenseDefinitionSchema = new mongoose.Schema(
 const userRecompenseSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'users',
         required: true
     },
     recompenseId: {
@@ -136,7 +136,7 @@ RecompenseDefinition.initializerRecompensesByDefault = async function() {
             category: 'series',
             icon: 'target',
             color: 'bg-red-500',
-            conditions: { type: 'serie_victoires', value: 10 },
+            conditions: { type: 'series_victoires', value: 10 },
             points: 50
         },
         {

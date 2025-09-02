@@ -150,16 +150,16 @@ const Jeu = () => {
     setTimeout(() => {
         refreshUserStats();
     }, 800);
-});
+  });
 
 
 
-    return () => {
-      socket.off('salonUpdated');
-      socket.off('gameStart');
-      socket.off('roundResult');
-      socket.off('nextRound');
-      socket.off('gameEnd');
+  return () => {
+    socket.off('salonUpdated');
+    socket.off('gameStart');
+    socket.off('roundResult');
+    socket.off('nextRound');
+    socket.off('gameEnd');
     };
   }, [socket]);
 
@@ -204,6 +204,35 @@ const Jeu = () => {
     console.log('🎯 CLIENT: Choix envoyé !');
     setChoice(choice);
     setHasChosen(true);
+  };
+
+  const handleReplay = () => {
+    console.log('🔄 DEMANDE REJOUER - SalonId:', salonId);
+    console.log('🔄 UserId:', user?.id);
+
+    if (!socket.connected) {
+      console.error('❌ Socket pas connecté !');
+      return;
+    }
+
+    // RESET ETATS LOCAUX
+    setGameEnded(false);
+    setGameResult(null);
+    setGameStatus('waiting');
+    setIsReady(false);
+    setHasChosen(false);
+    setChoice(null);
+    setRoundResult(null);
+    setScores([0, 0]);
+
+    // DEMANDE D'UNE NOUVELLE PARTIE VIA WEBSOCKET
+    socket.emit('requestReplay', {
+      salonId: salonId,
+      userId: user.id,
+      username: user.username
+    });
+
+    console.log('🔄 Event requestReplay envoyé !');
   };
 
   const getResultMessage = () => {
@@ -398,7 +427,7 @@ const Jeu = () => {
                 Quitter
               </button>
               <button
-                onClick={() => console.log('REJOUER')}
+                onClick={handleReplay}
                 className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition-colors"
               >
                 Rejouer

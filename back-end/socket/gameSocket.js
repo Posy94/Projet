@@ -3,6 +3,46 @@ const suiviController = require('../controllers/suivis.controller');
 const RecompensesController = require('../controllers/recompenses.controller');
 const mongoose = require('mongoose');
 
+const updateUserStats = async (userId, result) => {
+    try {
+        const User = require('../models/users.model');
+        
+        console.log('📊 MISE À JOUR STATS:', { userId, result });
+        
+        const updateFields = {};
+        
+        if (result === 'win') {
+            updateFields.$inc = { 
+                'stats.wins': 1,
+                'stats.gamesPlayed': 1 
+            };
+        } else if (result === 'lose') {
+            updateFields.$inc = { 
+                'stats.losses': 1,
+                'stats.gamesPlayed': 1 
+            };
+        } else if (result === 'draw') {
+            updateFields.$inc = { 
+                'stats.draws': 1,
+                'stats.gamesPlayed': 1 
+            };
+        }
+        
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            updateFields,
+            { new: true }
+        );
+        
+        console.log('✅ STATS MISES À JOUR:', updatedUser?.stats);
+        return updatedUser;
+        
+    } catch (error) {
+        console.error('❌ Erreur mise à jour stats:', error);
+    }
+};
+
+
 const savedGameStats = async (salon, finalResult) => {
     try {
         console.log('🎮 Sauvegarde de la partie...');
@@ -41,10 +81,10 @@ const savedGameStats = async (salon, finalResult) => {
 
         await suiviController.createSuivi(gameData);
 
-        if (finalResult !== 'player') {
-            await updateUserStats(gagnant.user._id, 'win', gagnant.choice);
+        if (finalResult === 'player') {
+            await updateUserStats(salon.players[0].userId, 'win');
         } else {
-            await updateUserStats(salon.players[0].userId, 'lose', salon.players[0].choice);
+            await updateUserStats(salon.players[0].userId, 'lose');
         }
 
         console.log('✅ Partie sauvegardée avec succès');
@@ -89,6 +129,9 @@ const savedGameStatsPVP = async (salon, result) => {
         console.log('🥺 DONNÉES LOSER:', loserData);
 
         await suiviController.createSuivi(loserData);
+
+        await updateUserStats(winner.playerId, 'win');
+        await updateUserStats(loser.playerId, 'lose');
 
         console.log('✅ Partie PVP sauvegardée avec succès');
 
@@ -454,7 +497,7 @@ module.exports = (io) => {
 
                     console.log('🔴 SCORES AVANT setTimeout:', salon.scores);
 
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         salon.currentRound += 1;
 
                         salon.players.forEach(player => {
@@ -463,7 +506,8 @@ module.exports = (io) => {
                             }
                         });
 
-                        console.log('🔄 ROUND SUIVANT PRÉPARÉ:', salon.currentRound);
+                        await salon.save(); // ⚡ SAVE !
+                        console.log('🔄 ROUND SAUVEGARDÉ:', salon.currentRound);
 
                         const simpleScores = salon.scores.map(scoreObj => scoreObj.wins);
                         console.log('📤 NEXT ROUND - SCORES ENVOYÉS (FORMAT SIMPLE):', simpleScores);
@@ -646,13 +690,6 @@ module.exports = (io) => {
                             }
                         };
 
-                        // Appeler la fonction de récompenses
-                        // const recompensesData = await updateStatsAndRecompenses(
-                        //     finalResult.winner.playerId,
-                        //     finalResult.loser.playerId,
-                        //     winner === 'player1' ? choice1 : choice2
-                        // );
-
                         // Envoyer gameEnd aux clients
                         console.log('📡 ENVOI gameEnd avec ces données:');
                         console.log('🏆 winner:', finalResult.winner);
@@ -708,6 +745,59 @@ module.exports = (io) => {
                 console.error('❌ ERREUR:', error);
             }
         });
+
+        // REJOUER UNE PARTIE
+        socket.on('requestReplay', async (data) => {
+            console.log('🔄 BACKEND: Demande de replay reçue:', data);
+
+            const { salonId, userId, username } = data;
+
+            try {
+                // D'abord récupérer le salon actuel
+                const salon = await SalonsModel.findOne({ salonId: salonId });
+
+                if (!salon) {
+                    return socket.emit('error', { message: 'Salon non trouvé' });
+                }
+
+                // Reset PROPRE selon la structure de ton modèle
+                salon.status = 'waiting';
+                salon.currentRound = 1;
+                salon.roundStartTime = null;
+
+                // Reset players choices et ready
+                salon.players.forEach(player => {
+                    player.choice = null;
+                    player.ready = false;
+                });
+
+                // Reset scores EN GARDANT LA STRUCTURE
+                salon.scores.forEach(scoreObj => {
+                    scoreObj.wins = 0;
+                });
+
+                console.log('🔄 BACKEND: Scores après reset:', salon.scores);
+
+                await salon.save();
+
+                // Notifier tous les joueurs
+                io.to(salonId).emit('gameRestarted', {
+                    message: 'Nouvelle partie démarrée !',
+                    salon: {
+                        status: 'waiting',
+                        currentRound: 1,
+                        scores: salon.scores
+                    }
+                });
+
+                console.log('🔄 BACKEND: Event gameRestarted envoyé');
+
+            } catch (error) {
+                console.error('❌ Erreur lors du replay:', error);
+                socket.emit('error', { message: 'Erreur lors du redémarrage' });
+            }
+        });
+
 
         // CHAT EN TEMPS REEL
         socket.on('chatMessage', async ({ salonId, userId, username, message }) => {

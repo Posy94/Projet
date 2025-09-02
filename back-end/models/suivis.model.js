@@ -39,7 +39,7 @@ const suivisSchema = new mongoose.Schema(
 
     // INDEX POUR OPTIMISER LES REQUETES
     suivisSchema.index({ userId: 1, createdAt: -1 });
-    suivisSchema.index({ userId: 1, choicUsed: 1 });
+    suivisSchema.index({ userId: 1, choiceUsed: 1 });
     suivisSchema.index({ userId: 1, result: 1 });
 
 module.exports = mongoose.model('suivis', suivisSchema)
