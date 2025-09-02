@@ -105,52 +105,73 @@ const Jeu = () => {
     });
 
     socket.on("gameEnd", (data) => {
-    console.log('🏁 GAME END REÇU:', data);
-    
-    let personalResult = 'unknown';
+      console.log('🏁 GAME END REÇU:', data);
 
-    // 🚨 FORCE LA CONVERSION EXPLICITE
-    const winnerId = String(data.winnerId || '');
-    const loserId = String(data.loserId || '');
-    const userId = String(user?.id || '');
-    
-    console.log('🔍 CONVERSIONS FORCÉES:');
-    console.log('   winnerId:', winnerId);
-    console.log('   loserId:', loserId);
-    console.log('   userId:', userId);
-    
-    if (winnerId && loserId && userId) {
-        console.log('✅ ENTRÉE DANS LA CONDITION !');
-        
-        console.log('🔍 COMPARAISONS:');
-        console.log('   userId === winnerId?', userId === winnerId);
-        console.log('   userId === loserId?', userId === loserId);
+      let personalResult = 'unknown';
+      const userId = String(user?.id || '');
+
+      console.log('🔍 User ID:', userId);
+
+      // 🎯 DÉTECTE LE TYPE DE PARTIE
+      if (data.winnerId && data.loserId) {
+        // 👥 MODE PVP - Utilise les IDs
+        console.log('🎮 MODE PVP DÉTECTÉ');
+
+        const winnerId = String(data.winnerId);
+        const loserId = String(data.loserId);
+
+        console.log('🔍 Winner ID:', winnerId);
+        console.log('🔍 Loser ID:', loserId);
+        console.log('🔍 User ID:', userId);
 
         if (userId === winnerId) {
-            personalResult = 'win';
-            console.log('🏆 VICTOIRE !');
+          personalResult = 'win';
+          console.log('🏆 VICTOIRE PVP !');
         } else if (userId === loserId) {
-            personalResult = 'lose';
-            console.log('💔 DÉFAITE !');
+          personalResult = 'lose';
+          console.log('💔 DÉFAITE PVP !');
+        } else {
+          personalResult = 'draw';
+          console.log('🤝 ÉGALITÉ PVP !');
         }
-    } else {
-        console.log('❌ DONNÉES MANQUANTES après conversion');
-    }
 
-    console.log('🎯 RÉSULTAT FINAL:', personalResult);
-    
-    const gameEndData = {
+      } else if (data.winner) {
+        // 🤖 MODE IA - Utilise le winner textuel
+        console.log('🤖 MODE IA DÉTECTÉ');
+
+        const winner = typeof data.winner === 'string'
+          ? data.winner
+          : data.winner.playerId; // Au cas où...
+
+        console.log('🔍 Winner:', winner);
+
+        if (winner === 'player') {
+          personalResult = 'win';
+          console.log('🏆 VICTOIRE IA !');
+        } else if (winner === 'ai') {
+          personalResult = 'lose';
+          console.log('💔 DÉFAITE IA !');
+        } else if (winner === 'draw' || winner === 'tie') {
+          personalResult = 'draw';
+          console.log('🤝 ÉGALITÉ IA !');
+        }
+      }
+
+      console.log('🎯 RÉSULTAT FINAL:', personalResult);
+
+      const gameEndData = {
         ...data,
         result: personalResult
-    };
+      };
 
-    setGameResult(gameEndData);
-    setGameEnded(true);
+      setGameResult(gameEndData);
+      setGameEnded(true);
 
-    setTimeout(() => {
+      setTimeout(() => {
         refreshUserStats();
-    }, 800);
-  });
+      }, 800);
+    });
+
 
 
 
@@ -236,13 +257,19 @@ const Jeu = () => {
   };
 
   const getResultMessage = () => {
-  switch(gameResult?.result) {
-    case 'win': return '🏆 VICTOIRE !';
-    case 'draw': return '🤝 ÉGALITÉ !';
-    case 'lose': return '💔 DÉFAITE !';
-    default: return '🤔 Résultat inconnu';
-  }
-};
+  console.log('🔍 DEBUG gameResult:', gameResult);
+  console.log('🔍 DEBUG gameResult.result:', gameResult?.result);
+  
+    switch (gameResult?.result) {
+      case 'win': return '🏆 VICTOIRE !';
+      case 'draw': return '🤝 ÉGALITÉ !';
+      case 'lose': return '💔 DÉFAITE !';
+      default:
+        console.log('❌ Cas default atteint avec:', gameResult?.result);
+        return '🤔 Résultat inconnu';
+    }
+  };
+
 
   if (!salon) return <div className="text-center mt-10">Chargement du salon...</div>
 
@@ -326,46 +353,54 @@ const Jeu = () => {
 
       {roundResult && (
         <div className="mt-6 text-center">
+
           <h3 className="text-xl font-bold">Résultat du Round</h3>
 
           <p className="text-lg">
+
             {roundResult.result === "draw"
-                ? "Egalité, personne ne gagne ce round !"
-                : salonId
-                ? // MODE PVP - VERIFIER QUI A GAGNE
-                  (() => {
-                  console.log('🔍 ROUND RESULT COMPLET:', roundResult);
-                  console.log('🔍 roundResult.result:', roundResult.result);
-                  console.log('🔍 salon.players:', salon?.players);
+              ? "Égalité, personne ne gagne ce round !"
+              : (() => {
+
+                console.log('🔍 RESULT DEBUG:', {
+                  result: roundResult.result,
+                  salonId: salonId, // ✅ AJOUTE ÇA !
+                  player0: salon?.players?.[0]?.user?.username,
+                  player1: salon?.players?.[1]?.user?.username,
+                  scores: salon?.scores
+                });
+
+                if (salonId && salon?.players?.length >= 2 && salon?.players?.[1]?.user) {
+                  // 🎯 MODE PVP RÉEL - 2 joueurs humains
                   const winnerId = roundResult.result;
-                  const winner = salon?.players?.find(p => {
-                    console.log('🔍 COMPARAISON:', {
-                      playerUserId: p?.user?._id,
-                      playerUserId2: p?.userId,
-                      winnerId: winnerId,
-                      match1: (p?.user?._id === winnerId),
-                      match2: (p?.userId === winnerId)
-                    });
-                    return (p?.user?._id || p?.userId) === winnerId;
-                  });
+                  const winnerIndex = salon.players.findIndex(player =>
+                    (player.user?._id || player.userId) === winnerId
+                  );
 
-                  console.log('🔍 WINNER TROUVÉ:', winner);
-                  const winnerName = winner?.user?.username || winner?.username || 'Joueur';
-                  console.log('🔍 WINNER NAME:', winnerName);
+                  const winner = salon?.players?.[winnerIndex];
+                  const winnerName = winner?.user?.username || winner?.username || 'Adversaire';
+                  const isCurrentUser = winnerId === user?.id;
 
-                  return winnerId === user?.id
+                  return isCurrentUser
                     ? "🎉 Vous gagnez ce round !"
                     : `${winnerName} gagne ce round !`;
-                })()
-                : // MODE IA
-                  roundResult.result === "player1"
-                  ? "🎉 Vous gagnez ce round !"
-                  : "🤖 L'IA gagne ce round !"
+
+                } else {
+                  // 🤖 MODE IA ou SOLO
+                  const winnerIndex = roundResult.result === "player1" ? 0 : 1;
+                  return winnerIndex === 0
+                    ? "🎉 Vous gagnez ce round !"
+                    : "🤖 L'IA gagne ce round !";
+                }
+
+
+              })()
             }
+
           </p>
 
           <div className="mt-2">
-            <h4 className="font-semibold mb-2">Choix des jouers :</h4>
+            <h4 className="font-semibold mb-2">Choix des joueurs :</h4>
               {roundResult.choices?.map(c => {
                 const playerInfo = c.userId === 'AI'
                   ? { name: '🤖 IA', isCurrentUser: false }
@@ -392,8 +427,8 @@ const Jeu = () => {
 
       <div>
         <h3>📊 Scores</h3>
-        {salonId && salon?.players ? (
-          // Mode PVP avec vérification
+        {salon?.gameType === 'pvp' ? (
+          // Mode PVP 
           <p>
             {salon.players[0]?.user?.username || 'Joueur 1'}: {scores[0] || 0} -
             {salon.players[1]?.user?.username || 'Joueur 2'}: {scores[1] || 0}
@@ -404,6 +439,7 @@ const Jeu = () => {
         )}
         <p>🎯 Premier à 3 victoires gagne !</p>
       </div>
+
 
 
       {gameStatus === "finished" && (

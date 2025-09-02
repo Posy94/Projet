@@ -208,18 +208,29 @@ module.exports = (io) => {
                 return player.user && player.user.toString() === userId;
             });
 
-            if (!isAlreadyInSalon) {
+            const existingPlayerIndex = salon.players.findIndex(player => {
+                if (player.user && player.user._id) {
+                    return player.user._id.toString() === userId;
+                }
+                return player.user && player.user.toString() === userId;
+            });
+
+            if (existingPlayerIndex === -1) {
+                // 🆕 NOUVEAU JOUEUR
                 salon.players.push({
                     user: userId,
                     choice: null,
                     ready: false,
                     socketId: socket.id
                 });
-                await salon.save();
-                console.log(`✅ Joueur ${username} ajouté au salon`);
+                console.log(`✅ Nouveau joueur ${username} ajouté au salon`);
             } else {
-                console.log(`⚠️ Joueur ${username} déjà dans le salon`);
+                // 🔄 JOUEUR EXISTANT = METTRE À JOUR SA SOCKET !
+                salon.players[existingPlayerIndex].socketId = socket.id;
+                console.log(`🔄 Socket mise à jour pour ${username}: ${socket.id}`);
             }
+
+            await salon.save();
 
             socket.userId = userId;
             socket.salonId = salonId;
@@ -600,23 +611,35 @@ module.exports = (io) => {
                     
 
                     // ENVOYER LE RESULTAT A TOUS LES JOUEURS
+
+                    console.log('🚀 ENVOI roundResult à tous les joueurs');
+                    console.log('🔍 Nombre de joueurs:', salon.players.length);
+
                     salon.players.forEach((player, index) => {
+
+                        console.log(`🔍 Joueur ${index}:`, {
+                            userId: player.user,
+                            socketId: player.socketId,
+                            socketExists: !!io.sockets.sockets.get(player.socketId)
+                        });
+
                         const playerSocket = io.sockets.sockets.get(player.socketId);
                         if (playerSocket) {
-                            let personalResult;
+                            console.log(`✅ ENVOI à joueur ${index}`);
+                            let winnerId = null;
 
+                            // 🏆 DÉTERMINE L'ID DU GAGNANT
                             if (result === 'draw') {
-                                personalResult = 'draw';
-                            } else if (result === 'player1' && index === 0) {
-                                personalResult = 'win';
-                            } else if (result === 'player2' && index === 1) {
-                                personalResult = 'win';
-                            } else {
-                                personalResult = 'lose';
+                                winnerId = 'draw';
+                            } else if (result === 'player1') {
+                                winnerId = salon.players[0].user; // ID du premier joueur
+                            } else if (result === 'player2') {
+                                winnerId = salon.players[1].user; // ID du deuxième joueur
                             }
 
                             playerSocket.emit('roundResult', {
-                                result: personalResult,
+                                result: winnerId,  // ✅ ID du gagnant ou "draw"
+                                winnerId: winnerId,  // ✅ Pour plus de clarté
                                 choices: salon.players.map(p => ({
                                     userId: p.user,
                                     choice: p.choice
@@ -629,6 +652,7 @@ module.exports = (io) => {
                             });
                         }
                     });
+
 
                     console.log('🏆 Score 1:', salon.scores[0]);
                     console.log('🏆 Score 2:', salon.scores[1]);
