@@ -2,12 +2,18 @@ import React, { useState } from "react";
 import { Link, useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useUser } from "../contexts/UserContext";
+import { useSocket } from "../contexts/SocketContext";
+import GameModeModal from '../components/GameModeModal';
+import PlayerSelectionModal from '../components/PlayerSelectionModal';
 
 const Home = () => {
 
     const navigate = useNavigate();
     const [creatingGame, setCreatingGame] = useState(false);
     const { user, loading } = useUser();
+    const { sendInvitation } = useSocket();
+    const [showPlayerList, setShowPlayerList] = useState(false);
+    const [showGameModeModal, setShowGameModeModal] = useState(false);
 
     const handlePlayVsAI = async () => {
         setCreatingGame(true);
@@ -35,6 +41,13 @@ const Home = () => {
     };
 
     const handlePlayVsPlayer = async () => {
+        
+        // SALON PUBLIC OU INVITATION PRIVEE
+        setShowGameModeModal(true);
+    };
+
+    // SALON PUBLIC
+    const handleCreatePublicSalon = async () => {
         setCreatingGame(true);
         try {
             const response = await fetch('/api/salons/create-pvp', {
@@ -58,6 +71,23 @@ const Home = () => {
             setCreatingGame(false);
         }
     };
+
+    // INVITATION PRIVEE
+    const handleInviteSpecificPlayer = () => {
+        setShowPlayerList(true);
+    };
+
+    const handleSendInvitation = async (targetUserId) => {
+        try {
+            await sendInvitation(targetUserId);
+            setShowPlayerList(false);
+            setShowGameModeModal(false);
+            console.log('✅ Invitation envoyée !');
+        } catch (error) {
+            console.error('Erreur invitation:', error);
+            alert('❌ Erreur lors de l\'envoi de l\'invitation');
+        }
+    }
 
     if (loading) return <LoadingSpinner />;
 
@@ -152,6 +182,24 @@ const Home = () => {
             <div className="mt-8 text-sm text-gray-500">
                 <Link to={"/regles"} className="underline hover:text-blue-700">Voir les règles du jeu</Link>
             </div>
+
+            {/* MODAL DE CHOIX DE MODE */}
+            {showGameModeModal && (
+                <GameModeModal
+                    onClose={() => setShowGameModeModal(false)}
+                    onPublicSalon={handleCreatePublicSalon}
+                    onPrivateInvite={handleInviteSpecificPlayer}
+                />
+            )}
+
+            {/* MODAL DE SELECTION DE JOUEUR */}
+            {showPlayerList && (
+                <PlayerSelectionModal
+                    onClose={() => setShowPlayerList(false)}
+                    onSelect={handleSendInvitation}
+                />
+            )}
+
         </div>
     );
 };

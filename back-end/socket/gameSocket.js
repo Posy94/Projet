@@ -3,6 +3,231 @@ const suiviController = require('../controllers/suivis.controller');
 const RecompensesController = require('../controllers/recompenses.controller');
 const mongoose = require('mongoose');
 
+const UsersModel = require('../models/users.model');
+const InvitationsModel = require('../models/invitations.model');
+const invitationsModel = require('../models/invitations.model');
+const usersModel = require('../models/users.model');
+
+const handleUserConnection = async (socket, userId) => {
+    try {
+        await UsersModel.setUserOnline(userId, socket.id);
+        socket.join(`user_${userId}`);
+        console.log(`✅ Utilisateur ${userId} connecté avec socket ${socket.id}`);
+        socket.broadcast.emit('user_online', { userId });
+    } catch (error) {
+        console.error('❌ Erreur handleUserConnection:', error);
+    }
+};
+
+const handleSendInvitation = async (io, socket, data) => {
+    try {
+        const { fromUserId, toUserId, salonId, fromUsername } = data;
+
+        // VERIFIER QUE LE DESTINATAIRE EST EN LIGNE
+        const targetUser = await UsersModel.findById(toUserId);
+        if (!targetUser || !targetUser.isOnline) {
+            return socket.emit('invitation_error', {
+                success: false,
+                message: 'Le joueur n\'est pas en ligne'
+            });
+        }
+
+        // CREER L'INVITATION
+        const invitation = await InvitationsModel.create({
+            salonId,
+            fromUser: fromUserId,
+            toUser: toUserId,
+            status: 'pending',
+            expiresAt: new Date(Date.now() + 2 * 60 * 1000)
+        });
+
+        await invitation.populate('fromUser', 'username avatar');
+
+        // ENVOYER L'INVITATION AU DESTINATAIRE
+        io.to(`user_${toUserId}`).emit('invitation_received', {
+            id: invitation._id,
+            salonId: invitation.salonId,
+            fromUser: {
+                id: invitation.fromUser._id,
+                username: invitation.fromUser.username,
+                avatar: invitation.fromUser.avatar
+            },
+            expiresAt: invitation.expiresAt,
+            message: `${invitation.fromUser.username} vous invite à jouer !`
+        });
+
+        // CONFIRMER A L'EXPEDITEUR
+        socket.emit('invitation_sent', {
+            success: true,
+            message: `Invitation envoyée`,
+            invitationId: invitation._id
+        });
+
+        console.log(`📨 Invitation envoyée: ${fromUsername} → user_${toUserId}`);
+
+    } catch (error) {
+        console.error('❌ Erreur handleSendInvitation:', error);
+        socket.emit('invitation_error', {
+            success: false,
+            message: error.message || 'Erreur lors de l\'envoi de l\'invitation'
+        });
+    }
+};
+
+const handleAcceptInvitation = async (io, socket, data) => {
+    try {
+        const { invitationId } = data;
+
+        const invitation = await invitationsModel.findById(invitationId)
+            .populate('fromUser', 'username avatar currentSocketId')
+            .populate('toUser', 'username avatar')
+        
+            if (!invitation || invitation.status !== 'pending') {
+                return socket.emit('invitation_error', {
+                    success: false,
+                    message: 'Invitation introuvable ou expirée'
+                });
+            }
+
+            // MARQUER COMME ACCEPTEE
+            invitation.status = 'accepted';
+            invitation.respondedAt = new Date();
+            await invitation.save();
+
+            // MARQUER COMME ACCEPTEE
+            invitation.status = 'accepted';
+            invitation.respondedAt = new Date();
+            await invitation.save();
+
+            // NOTIFIER L'EXPEDITEUR
+            if (invitation.fromUser,currentSocketId) {
+                io.to(invitation.fromUser.currentSocketId).emit('invitation_accepted_by_user', {
+                    invitationId: invitation._id,
+                    acceptedBy: {
+                        id: invitation.toUser._id,
+                        username: invitation.toUser.username,
+                        avatar: invitation.toUSer.avatar
+                    },
+                    salonId: invitation.salonId,
+                    message: `${invitation.toUser.username} a accepté votre invitation !`
+                });
+            }
+
+            // CONFIRMER A CELUI QUI ACCEPTE
+            socket.emit('invitation_accepted', {
+                success: true,
+                salonId: invitation.salonId,
+                message: 'Invitation acceptée ! Redirection vers le salon...'
+            });
+
+            console.log(`✅ Invitation acceptée: ${invitation.toUser.username} → salon ${invitation.salonId}`);
+
+    } catch (error) {
+        console.error('❌ Erreur handleAcceptInvitation:', error);
+        socket.emit('invitation_error', {
+            success: false,
+            message: 'Erreur lors de l\'acceptation'
+        });
+    }
+};
+
+const handleDeclineInvitation = async (io, socket, data) => {
+    try {
+        const { invitationId } = data;
+
+        const invitation = await invitationsModel.findById(invitationId)
+            .populate('fromUser', 'username avatar currentSocketId')
+            .populate('toUser', 'username avatar')
+
+        if (!invitation) {
+            return socket.emit('invitation_error', {
+                success: false,
+                message: 'Invitation introuvable'
+            });
+        }
+
+        // MARQUER COMME DECLINEE
+        invitation.status = 'declined';
+        invitation.respondedAt = new Date();
+        await invitation.save();
+
+        // NOTIFIER L'EXPEDITEUR
+        if (invitation.fromUser.currentSocketId) {
+            io.to(invitation.fromUser.currentSocketId).emit('invitation_declined_by_user', {
+                invitationId: invitation._id,
+                declinedBy: {
+                    id: invitation.toUSer._id,
+                    username: invitation.toUser.username,
+                    avatar: invitation.toUSer.avatar
+                },
+                message: `${invitation.toUser.username} a decliné votre invitation`
+            });
+        }
+
+        // CONFIRMER A CELUI QUI DECLINE
+        socket.emit('invitation_declined', {
+            success: true,
+            message: 'Invitation déclinée'
+        });
+
+        console.log(`❌ Invitation déclinée: ${invitation.toUser.username} de ${invitation.fromUser.username}`);
+
+    } catch (error) {
+        console.error('❌ Erreur handleDeclineInvitation:', error);
+        socket.emit('invitation_error', {
+            success: false,
+            message: 'Erreur lors du déclin'
+        });
+    }
+};
+
+const handleUserDisconnection = async (socket) => {
+    try {
+        const user = await usersModel.findOne({ currentSocketId: socket.id });
+
+        if (user) {
+            console.log(`🔌 Déconnexion détectée pour: ${user.username}`);
+
+            // DELAI DE GRACE AVANT DE MARQUER OFFLINE
+            setTimeout(async () => {
+                const stillConnected = await UsersModel.findOne({
+                    _id: user._id,
+                    currentSocketId: socket.id
+                });
+
+                if (stillConnected) {
+                    await usersModel.setUserOffline(user._id);
+                    console.log(`❌ Utilisateur ${user.username} marqué offline`);
+
+                    socket.broadcast.emit('user_offline', {
+                        userId: user._id,
+                        username: user.username
+                    });
+
+                    // ANNULER LES INVITATIONS EN ATTENTE
+                    await invitationsModel.cancelPendingInvitations(user._id);
+                }
+            }, 15000);
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur handleUserDisconnection:', error);
+    }
+}
+
+// NETTOYAGE PERIODIQUE
+const startCleanupInterval = () => {
+    setInterval(async () => {
+        try {
+            // await usersModel.cleanupInactiveUsers();
+            await invitationsModel.expireOldInvitations();
+            console.log('🧹 Nettoyage effectué');
+        } catch (error) {
+            console.error('❌ Erreur nettoyage:', error);
+        }
+    }, 5 * 60 * 1000);
+};
+
 const updateUserStats = async (userId, result) => {
     try {
         const User = require('../models/users.model');
@@ -142,6 +367,10 @@ const savedGameStatsPVP = async (salon, result) => {
 
 
 module.exports = (io) => {
+
+    // DEMARRER LE NETTOYAGE DES INVITATIONS AU LANCEMENT
+    startCleanupInterval();
+
     io.on('connection', (socket) => {
         console.log('Utilisateur connecté:', socket.id);
 
@@ -154,6 +383,18 @@ module.exports = (io) => {
         socket.on('joinSalon', async ({ salonId, userId, username }) => {
             try {
                 console.log(`🎯 Tentative de rejoindre salon: ${salonId} par user: ${userId}`);
+
+                if (invitationId) {
+                    try {
+                        await invitationsModel.findByIdAndUpdate(invitationId, {
+                            status: 'used',
+                            respondedAt: new Date()
+                        });
+                        console.log(`📨 Invitation ${invitationId} marquée comme utilisée`);
+                    } catch (invError) {
+                        console.error('❌ Erreur marquage invitation:', invError);
+                    }
+                }
                 
                 // REJOINDRE IMMEDIATEMENT LE SALON
                 await socket.join(salonId);
@@ -862,6 +1103,34 @@ module.exports = (io) => {
                 socket.emit('error', error.message);
             }
         });
+        
+        // ENVOI D'INVITATION
+        socket.on ('send_invitation', (data) => {
+            if (!socket.userId) {
+                return socket.emit('auth_error', { message: 'Non authentifié' });
+            }
+            
+            data.fromUserId = socket.userId;
+            handleSendInvitation(io, socket, data);
+        });
+        
+        // ACCEPTATION D'INVITATION
+        socket.on('accept_invitation', (data) => {
+            if (!socket.userId) {
+                return socket.emit('auth_error', { message: 'Non authentifié' });
+            }
+            
+            handleAcceptInvitation(io, socket, data);
+        });
+        
+        // DECLIN D'INVITATION
+        socket.on('decline_invitation', (data) => {
+            if (!socket.userId) {
+                return socket.emit('auth_error', { message: 'Non authentifié' });
+            }
+            
+            handleDeclineInvitation(io, socket, data);
+        });
 
         // DECONNEXION
         socket.on('disconnect', async () => {
@@ -889,6 +1158,9 @@ module.exports = (io) => {
                         console.log(`Utilisateur ${username || 'inconnu'} a quitté le salon multijoueur ${salonId}`);                        
                     }
                 }
+
+                handleUserDisconnection(socket);
+
             } catch (error) {
                 console.error('Erreur lors de la déconnexion:', error);
                 

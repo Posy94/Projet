@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router';
 import { Link } from 'react-router';
 import { UserProvider, useUser } from './contexts/UserContext';
+import { SocketProvider } from './contexts/SocketContext';
 
 //COMPONENTS & PAGES
 import Layout from './components/Layout/Layout';
@@ -77,7 +78,9 @@ function AppContent() {
 function App() {
   return (
     <UserProvider>
-      <AppContent />
+      <SocketProvider>
+        <AppContent />
+      </SocketProvider>
     </UserProvider>
   );
 }

@@ -12,6 +12,7 @@ const salonsRouter = require('./router/salons.router');
 const recompensesRouter = require('./router/recompenses.router');
 const suivisRouter = require('./router/suivis.router');
 const authRouter = require('./router/auth.router');
+const invitationsRoutes = require('./router/invitations.router');
 
 // CONNEXION MONGO
 connectMongoDB(ENV.MONGO_URI_LOCAL, ENV.DB_NAME);
@@ -34,6 +35,7 @@ app.use("/api/salons", salonsRouter);
 app.use("/api/recompenses", recompensesRouter);
 app.use("/api/suivis", suivisRouter);
 app.use("/api/auth", authRouter);
+app.use('/api/invitations', invitationsRoutes);
 
 // MIDDLEWARE GESTION D ERREURS
 

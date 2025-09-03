@@ -161,6 +161,20 @@ module.exports.login = async (req, res, next) => {
         // METTRE A JOUR lastLogin
         user.updatedAt = new Date();
         await user.save();
+
+        // 🔧 DEBUG - METTRE USER EN LIGNE
+        console.log('🔄 Setting user online...');
+        try {
+            const updatedUser = await UsersModel.setUserOnline(user._id, null);
+            console.log('✅ User set online:', {
+                id: updatedUser._id,
+                username: updatedUser.username,
+                isOnline: updatedUser.isOnline,
+                lastSeen: updatedUser.lastSeen
+            });
+        } catch (setOnlineError) {
+            console.error('❌ Erreur setUserOnline:', setOnlineError);
+        }
                
         res.json({
             success: true,

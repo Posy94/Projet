@@ -45,6 +45,18 @@ const usersSchema = mongoose.Schema(
             type: Boolean,
             default: true
         },
+        isOnline: {
+            type: Boolean,
+            default: false
+        },
+        lastSeen: {
+            type: Date,
+            default: Date.now
+        },
+        currentSocketId: {
+            type: String,
+            default: null
+        },
         stats: {
             gamesPlayed: {
                 type: Number,
@@ -84,5 +96,60 @@ const usersSchema = mongoose.Schema(
 
     }, { timestamps: true }
 );
+
+// METHODE STATISTIQUE POUR LES INVITATIONS
+usersSchema.statics.getOnlineUsers = function() {
+    return this.find({
+        isOnline: true,
+        isActive: true,
+        isActivated: true,
+        lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
+    }).select('username email avatar isOnline lastSeen')
+};
+
+usersSchema.statics.setUserOnline = function(userId, socketId = null) {
+    console.log('📡 setUserOnline appelée pour:', userId);
+    return this.findByIdAndUpdate(userId, {
+        isOnline: true,
+        lastSeen: new Date(),
+        currentSocketId: socketId,
+        updatedAt: new Date()
+    }, { new: true });
+};
+
+usersSchema.statics.setUserOffline = function(userId) {
+    return this.findByIdAndUpdate(userId, {
+        isOnline: false,
+        currentSocketId: null,
+        updatedAt: new Date()
+    }, { new: true });
+};
+
+// METHODE POUR VERIFIER SI UN UTILISATEUR EST DISPONIBLE
+usersSchema.statics.isUserAvailable = function(userId) {
+    return this.findOne({
+        _id: userId,
+        isOnline: true,
+        isActive: true,
+        isActivated: true,
+        lastSeen: { $gte: new Date(Date.now() - 5 * 60 * 1000) }
+    });
+};
+
+// METHODE POUR NETTOYER LES UTILISATEURS INACTIFS
+usersSchema.statics.cleanupInactiveUsers = function() {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    return this.updateMany(
+        {
+            isOnline: true,
+            lastSeen: { $lt: fiveMinutesAgo }
+        },
+        {
+            isOnline: false,
+            currentSocketId: null,
+            updatedAt: new Date()
+        }
+    );
+};
 
 module.exports = mongoose.model('users', usersSchema)
