@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import io from "socket.io-client";
 import { useUser } from '../contexts/UserContext';
+import { useSocket } from '../contexts/SocketContext';
 
 const socket = io("http://localhost:8000");
 
 const Jeu = () => {
   
+  const { socket } = useSocket();
   const { user, loading } = useUser();
   const { salonId } = useParams();
   const [salon, setSalon] = useState(null);
@@ -25,6 +27,65 @@ const Jeu = () => {
       window.refreshUserStats();
     }
   }
+
+  // RÉCUPÉRATION DES DONNÉES DU SALON VIA HTTP
+  useEffect(() => {
+    console.log('🎯 useEffect déclenché avec salonId:', salonId);
+
+    if (socket) {
+      console.log('🧹 Nettoyage listeners socket existants');
+      socket.removeAllListeners('joinSalon');
+      socket.removeAllListeners('salonUpdated');
+      socket.removeAllListeners('gameStarted');
+      socket.removeAllListeners('nextRound');
+      socket.removeAllListeners('roundResult');
+      socket.removeAllListeners('gameEnd');
+    }
+
+    const fetchSalon = async () => {
+      if (!salonId) {
+        console.log('❌ Pas de salonId, sortie');
+        return;
+      }
+
+      console.log('🧹 Reset des states...');
+      setSalon(null);
+      setGameStatus("waiting");
+      setIsReady(false);
+      setHasChosen(false);
+      setChoice(null);
+      setRoundResult(null);
+      setIsAIGame(false);
+      setScores([0, 0]);
+      setGameEnded(false);
+      setGameResult(null);
+
+      try {
+        console.log('🔍 Récupération salon:', salonId);
+        console.log('🌐 URL complète:', `http://localhost:8000/api/salons/${salonId}`);
+
+        const response = await fetch(`http://localhost:8000/api/salons/${salonId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        const salonData = await response.json();
+        console.log('✅ Salon récupéré:', salonData);
+        console.log('📅 Date salon:', salonData.createdAt);
+        console.log('🆔 ID salon:', salonData._id);
+
+        setSalon(salonData);
+        setIsAIGame(salonData.gameType === 'ai');
+
+      } catch (error) {
+        console.error('💥 Erreur récupération salon:', error);
+      }
+    };
+
+    fetchSalon();
+  }, [salonId]);
+
 
   useEffect(() => {
     console.log('🔴 SCORES CHANGED:', scores);
@@ -59,8 +120,9 @@ const Jeu = () => {
         console.log('🤖 GameType:', salonData.gameType);        
     });
 
-    socket.on("gameStart", ({ round, message }) => {
-      console.log('🎮 GAME START REÇU !', { round, message });      
+    socket.on("gameStarted", ({ round, message }) => {
+      console.log('🎮 GAME START REÇU !', { round, message });
+      setGameStatus('playing');
       setRoundResult(null);
       setIsReady(false);
       setHasChosen(false);
@@ -177,7 +239,7 @@ const Jeu = () => {
 
   return () => {
     socket.off('salonUpdated');
-    socket.off('gameStart');
+    socket.off('gameStarted');
     socket.off('roundResult');
     socket.off('nextRound');
     socket.off('gameEnd');
@@ -186,6 +248,8 @@ const Jeu = () => {
 
   const handleReady = () => {
     console.log('🟦 handleReady déclenché');
+    console.log('🔍 salonId depuis params:', salonId);
+    console.log('🔍 salon.salonId depuis API:', salon?.salonId);
     console.log('🤖 Jeu contre IA ?', isAIGame);
 
     if (!socket.connected) {
@@ -194,7 +258,7 @@ const Jeu = () => {
     }
   
     socket.emit('playerReady', {
-      salonId: salon.salonId,
+      salonId: salonId,
       userId: user.id,
       username: user.username
     });
@@ -228,7 +292,10 @@ const Jeu = () => {
   };
 
   const handleReplay = () => {
-    console.log('🔄 DEMANDE REJOUER - SalonId:', salonId);
+    console.log('🔄 DEMANDE REJOUER');
+    console.log('🔍 salonId depuis params:', salonId);
+    console.log('🔍 salon.salonId depuis API:', salon?.salonId);
+    console.log('🔍 SONT-ILS IDENTIQUES ?', salonId === salon?.salonId);
     console.log('🔄 UserId:', user?.id);
 
     if (!socket.connected) {
@@ -364,7 +431,7 @@ const Jeu = () => {
 
                 console.log('🔍 RESULT DEBUG:', {
                   result: roundResult.result,
-                  salonId: salonId, // ✅ AJOUTE ÇA !
+                  salonId: salonId,
                   player0: salon?.players?.[0]?.user?.username,
                   player1: salon?.players?.[1]?.user?.username,
                   scores: salon?.scores

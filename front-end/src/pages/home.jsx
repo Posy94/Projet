@@ -28,6 +28,7 @@ const Home = () => {
 
             if (response.ok) {
                 const { salonId } = await response.json();
+                console.log('🔍 HOME - SALON CRÉÉ:', salonId);
                 navigate(`/jeu/${salonId}`);
             } else {
                 alert('❌ Erreur lors de la création de la partie');
@@ -79,15 +80,19 @@ const Home = () => {
 
     const handleSendInvitation = async (targetUserId) => {
         try {
-            await sendInvitation(targetUserId);
+            console.log('🎯 DÉBUT - Envoi invitation à:', targetUserId);
+
+            // ✅ AJOUTE LE SALON ID (null ou undefined pour l'instant)
+            sendInvitation(targetUserId, null);
+
             setShowPlayerList(false);
             setShowGameModeModal(false);
             console.log('✅ Invitation envoyée !');
         } catch (error) {
-            console.error('Erreur invitation:', error);
+            console.error('💥 Erreur invitation:', error);
             alert('❌ Erreur lors de l\'envoi de l\'invitation');
         }
-    }
+    };
 
     if (loading) return <LoadingSpinner />;
 

@@ -10,6 +10,7 @@ export const SocketProvider = ({ children }) => {
     const [invitations, setInvitations] = useState([]);
     const [onlineUsers, setOnlineUsers] = useState([]);
     const { user } = useUser();
+    const navigate = useNavigate();
 
     useEffect(() => {
 
@@ -34,7 +35,7 @@ export const SocketProvider = ({ children }) => {
                 // REDIRECTION VERS LE SALON SI C'EST L'EXPEDITEUR
                 if (data.fromUserId === user.id) {
                     // NAVIGATION VERS LE SALON
-                    window.location.href = `/salon/${data.salonId}`
+                    navigate(`/salon/${data.salonId}`);
                 }
             });
 
@@ -54,21 +55,37 @@ export const SocketProvider = ({ children }) => {
 
             return () => {
                 console.log('🧹 Nettoyage socket...');
+                newSocket.removeAllListeners();
                 newSocket.disconnect();
             };
         }
-    }, [user]);
+    }, [user, navigate]);
 
     // FONCTIONS UTILITAIRES
-    const sendInvitation = (toUserId, salonId) => {
-        if (socket && user) {
-            socket.emit('send_invitation', {
-                toUserId,
-                salonId,
-                fromUsername: user.username
-            });
+    const sendInvitation = async (toUserId) => {
+        if (user) {
+            try {
+                const response = await fetch('http://localhost:8000/api/invitations/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({ targetUserId: toUserId })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erreur serveur');
+                }
+
+                console.log('✅ Invitation envoyée via HTTP !');
+            } catch (error) {
+                console.error('💥 Erreur envoi invitation:', error);
+                throw error;
+            }
         }
     };
+
 
     const acceptInvitation = (invitationId) => {
         if (socket) {

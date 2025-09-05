@@ -383,18 +383,6 @@ module.exports = (io) => {
         socket.on('joinSalon', async ({ salonId, userId, username }) => {
             try {
                 console.log(`🎯 Tentative de rejoindre salon: ${salonId} par user: ${userId}`);
-
-                if (invitationId) {
-                    try {
-                        await invitationsModel.findByIdAndUpdate(invitationId, {
-                            status: 'used',
-                            respondedAt: new Date()
-                        });
-                        console.log(`📨 Invitation ${invitationId} marquée comme utilisée`);
-                    } catch (invError) {
-                        console.error('❌ Erreur marquage invitation:', invError);
-                    }
-                }
                 
                 // REJOINDRE IMMEDIATEMENT LE SALON
                 await socket.join(salonId);
@@ -511,9 +499,37 @@ module.exports = (io) => {
 
         // FONCTION IA
         async function handleAISalon(socket, salon, userId, username, salonId) {
-            
             console.log('🔴 DÉBUT handleAISalon - salonId:', salonId);
-            console.log('🔴 SALON RÉCUPÉRÉ - scores actuels:', salon.scores);
+
+            // NETTOYER LES ANCIENS JOUEURS DÉCONNECTÉS
+            salon.players = salon.players.filter(p => {
+                // Garde seulement l'IA et les joueurs avec des sockets actifs
+                if (p.userId === 'ai') return true;
+
+                // Pour un salon IA, garde SEULEMENT le joueur actuel
+                if (salon.gameType === 'ai') {
+                    if (p.userId === userId) return true;
+                    console.log(`🧹 SUPPRESSION joueur salon IA: ${p.username}`);
+                    return false;
+                }
+
+                // Vérifie si le socket existe encore
+                const socketExists = io.sockets.sockets.has(p.socketId);
+                if (!socketExists) {
+                    console.log(`🧹 SUPPRESSION joueur déconnecté: ${p.username} (${p.socketId})`);
+                    return false;
+                }
+                return true;
+            });
+
+            // POUR SALON IA : MAX 2 JOUEURS (1 humain + 1 IA)
+            if (salon.gameType === 'ai') {
+                salon.players = salon.players.filter(p =>
+                    p.userId === 'ai' || p.userId === userId
+                );
+            }
+
+            console.log('🧹 PLAYERS APRÈS NETTOYAGE:', salon.players.length);
 
             if (!salon.scores || salon.scores.length === 0) {
                 salon.scores = [
@@ -590,13 +606,14 @@ module.exports = (io) => {
 
 
         // JOUEUR PRET
-        socket.on('playerReady', async ({ salonId, userId }) => {
+        socket.on('playerReady', async ({ salonId, userId, username }) => {
             console.log('🔴 EVENT playerReady REÇU !');
             console.log('🔍 salonId:', salonId);
             console.log('🔍 userId:', userId);
 
             try {
-                const salon = await SalonsModel.findOne({ salonId });
+                const salon = await SalonsModel.findOne({ salonId })
+                    .populate('userCreator', 'username email');
 
                 console.log('🔍 SALON DIRECT:', salon.players.map(p => ({ userId: p.userId, username: p.username })));
 
@@ -636,7 +653,9 @@ module.exports = (io) => {
                     console.log('🔍 Nombre de joueurs:', salon.players.length);
                     console.log('🔍 GameType:', salon.gameType);
 
-                    const canStart = allReady && salon.players.length === salon.maxPlayers;
+                    const canStart = allReady && (
+                        salon.gameType === 'ai' ? salon.players.length >= 2 : salon.players.length === salon.maxPlayers
+                    );
 
                     console.log('🔍 Peut démarrer ?', canStart);
 
@@ -646,7 +665,10 @@ module.exports = (io) => {
                         salon.roundStartTime = new Date();
                         await salon.save();
 
-                        io.to(salonId).emit('gameStart', {
+                        console.log('📡 ÉMISSION gameStart vers salon:', salonId);
+                        console.log('📡 DONNÉES gameStart:', { round: 1, message: 'La partie commence !' });
+
+                        io.to(salonId).emit('gameStarted', {
                             message: 'La partie commence !',
                             round: salon.currentRound
                         });
@@ -657,6 +679,10 @@ module.exports = (io) => {
                     const updatedSalon = await SalonsModel.findOne({ salonId })
                         .populate(populateSalon());
                     io.to(salonId).emit('salonUpdated', updatedSalon);
+                } else {
+                    console.log('🚨 Joueur introuvable ! Tentative de reconstruction...');
+                    await handleAISalon(socket, salon, userId, username, salonId);
+                    return;
                 }
             } catch (error) {
                 console.error('❌ Erreur:', error);

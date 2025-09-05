@@ -7,27 +7,6 @@ const PlayerSelectionModal = ({ onClose, onSelect }) => {
 
     // CHARGER LA LISTE DES JOUEURS EN LIGNE
     useEffect(() => {
-        // const fetchOnlinePlayers = async () => {
-        //     try {
-        //         const response = await fetch(`${import.meta.env.PORT_APPLICATION_BACK}/api/invitations/players/online`, {
-        //             headers: {
-        //                 'Authorization': `Bearer ${localStorage.getItem('token')}`
-        //             }
-        //         });
-
-        //         if (response.ok) {
-        //             const result = await response.json();
-        //             setPlayers(result.data || []);
-        //         } else {
-        //             setError('Erreur lors du chargement des joueurs');
-        //         }
-        //     } catch (error) {
-        //         setError('Erreur orde connexion');
-        //         console.error('Erreur:', error);
-        //     } finally {
-        //         setLoading(false);
-        //     }
-        // };
 
         const fetchOnlinePlayers = async () => {
             try {
