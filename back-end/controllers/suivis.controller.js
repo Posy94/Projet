@@ -229,7 +229,75 @@ const suivisController = {
         } catch (error) {
             res.status(400).json({ error: error.message });
         }
-    }
+    },
+
+    // STATISTIQUES GLOBALES
+    getGlobalStats: async (req, res) => {
+        try {
+            // 👥 TOTAL DES UTILISATEURS
+            const totalUsers = await UsersModel.countDocuments();
+
+            // 🎮 TOTAL DES PARTIES (depuis tes suivis)
+            const totalGames = await SuivisModel.countDocuments();
+
+            // 🟢 UTILISATEURS EN LIGNE (connectés dans les 5 dernières minutes)
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            const onlineUsers = await UsersModel.countDocuments({
+                lastConnection: { $gte: fiveMinutesAgo }
+            });
+
+            // ⚡ PARTIES ACTIVES (parties créées dans la dernière heure)
+            const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+            const activeGames = await SuivisModel.countDocuments({
+                createdAt: { $gte: oneHourAgo },
+                result: { $exists: false } // Parties non terminées
+            });
+
+            // 📊 STATS ADDITIONNELLES INTÉRESSANTES
+            const additionalStats = await SuivisModel.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        totalWins: { $sum: { $cond: [{ $eq: ['$result', 'win'] }, 1, 0] } },
+                        totalLosses: { $sum: { $cond: [{ $eq: ['$result', 'lose'] }, 1, 0] } },
+                        totalDraws: { $sum: { $cond: [{ $eq: ['$result', 'draw'] }, 1, 0] } },
+                        avgGameDuration: { $avg: '$gameDuration' },
+                        mostUsedChoice: {
+                            $push: '$choiceUsed'
+                        }
+                    }
+                }
+            ]);
+
+            const extraStats = additionalStats[0] || {
+                totalWins: 0,
+                totalLosses: 0,
+                totalDraws: 0,
+                avgGameDuration: 0
+            };
+
+            res.status(200).json({
+                success: true,
+                message: 'Statistiques globales récupérées',
+                data: {
+                    totalUsers,
+                    totalGames,
+                    onlineUsers,
+                    activeGames,
+                    totalWins: extraStats.totalWins,
+                    totalDraws: extraStats.totalDraws,
+                    avgGameDuration: Math.round(extraStats.avgGameDuration || 0)
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ ERREUR dans getGlobalStats:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur serveur lors de la récupération des stats globales'
+            });
+        }
+    },
 };
 
 // FONCTIONS UTILITAIRES

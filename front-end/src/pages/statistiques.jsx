@@ -1,9 +1,9 @@
 import React from 'react'
 
-function Statistiques() {
+function statistiques() {
   return (
-    <div>Statistiques</div>
+    <div>statistiques</div>
   )
 }
 
-export default Statistiques
+export default statistiques

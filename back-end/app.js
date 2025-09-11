@@ -14,6 +14,9 @@ const suivisRouter = require('./router/suivis.router');
 const authRouter = require('./router/auth.router');
 const invitationsRoutes = require('./router/invitations.router');
 
+// CLEANUP SALONS ABANDONNES
+require ('./middlewares/cleanupSalons');
+
 // CONNEXION MONGO
 connectMongoDB(ENV.MONGO_URI_LOCAL, ENV.DB_NAME);
 

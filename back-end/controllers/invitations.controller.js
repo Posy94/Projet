@@ -1,5 +1,7 @@
 const UsersModel = require('../models/users.model');
 const InvitationsModel = require('../models/invitations.model');
+const SalonModel = require('../models/salons.model');
+
 
 const InvitationsController = {
 
@@ -122,6 +124,29 @@ const InvitationsController = {
             // ACCEPTER L'INVITATION
             await invitation.accept();
 
+            // AJOUTE LE JOUEUR AU SALON
+            const salon = await SalonModel.findOne({ salonId: invitation.salonId });
+
+            if (salon) {
+                const toUser = await UsersModel.findById(userId);
+
+                console.log('🔍 USER ID ACCEPTATION:', userId);
+                console.log('🔍 REQ.USER:', req.user);
+                console.log('🔍 TO USER RÉCUPÉRÉ:', toUser);
+                console.log('🔍 TO USER USERNAME:', toUser?.username);
+
+                salon.players.push({
+                    user: userId,
+                    userId: userId,
+                    username: toUser.username,
+                    ready: false,
+                    socketId: null
+                });
+
+                await salon.save();
+                console.log('✅ JOUEUR AJOUTÉ AU SALON:', toUser.username);
+            }
+
             res.json({
                 success: true,
                 message: 'Invitation acceptée avec succès',
@@ -206,7 +231,90 @@ const InvitationsController = {
                 error: error.message
             });
         }
-    }
+    },
+
+    sendInvitation: async (req, res) => {
+        try {
+            console.log('📥 Données reçues:', req.body);
+
+            const { receiverId } = req.body;
+            const senderId = req.user?.id;
+
+            // CREATION DU SALON
+            const salonId = `salon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            // Récupérer les infos des users
+            const fromUser = await UsersModel.findById(senderId);
+            const toUser = await UsersModel.findById(receiverId);
+
+            const newSalon = new SalonModel({
+                salonId,
+                name: `Partie ${fromUser.username} vs ${toUser.username}`,
+                userCreator: senderId,
+                maxPlayers: 2,
+                players: [
+                    {
+                        user: senderId,
+                        userId: senderId,
+                        username: fromUser.username,
+                        ready: false,
+                        socketId: null
+                    }
+                    // Le 2ème joueur sera ajouté lors de l'acceptation
+                ],
+                statut: 'waiting',
+                typePartie: 'multiplayer',
+                createdAt: new Date()
+            });
+
+            await newSalon.save();
+            console.log('✅ SALON CRÉÉ:', newSalon.salonId); 
+
+            // CRÉER L'INVITATION EN BASE
+            const newInvitation = await InvitationsModel.create({
+                fromUser: senderId,
+                toUser: receiverId,
+                salonId: salonId,
+                status: 'pending',
+                expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 min
+            });
+
+            const populatedInvitation = await InvitationsModel
+                .findById(newInvitation._id)
+                .populate('fromUser', 'username avatar')
+                .populate('toUser', 'username avatar');
+
+            console.log('✅ Invitation créée:', populatedInvitation);
+
+            // 🔥 ÉMETTRE VIA WEBSOCKET au destinataire
+            const io = req.app.get('io'); // Récupérer l'instance Socket.IO
+            if (io) {
+                io.to(`user_${receiverId}`).emit('invitation_received', {
+                    id: populatedInvitation._id,
+                    from: populatedInvitation.fromUser,
+                    to: populatedInvitation.toUser,
+                    salonId: populatedInvitation.salonId,
+                    createdAt: populatedInvitation.createdAt,
+                    expiresAt: populatedInvitation.expiresAt
+                });
+                console.log('📡 Invitation émise via WebSocket vers:', receiverId);
+            }
+
+            res.status(201).json({
+                success: true,
+                message: 'Invitation envoyée avec succès',
+                data: populatedInvitation
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur sendInvitation:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur serveur',
+                error: error.message
+            });
+        }
+    },
 }
 
 module.exports = InvitationsController;

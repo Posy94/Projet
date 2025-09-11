@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const createError = require('../middlewares/error');
 const emailServices = require('../services/emailServices');
-const usersModel = require('../models/users.model');
+const usersModel = require ('../models/users.model');
 
 // Générer JWT Token avec TON nom de cookie
 const generateToken = (userId) => {
@@ -36,7 +36,7 @@ module.exports.register = async (req, res, next) => {
         const activationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
         // CREATION DE L'UTILISATEUR (NON ACTIVE)
-        const user = new usersModel({
+        const user = new UsersModel({
             username: username.trim(),
             email: email.toLowerCase().trim(),
             password: hashedPassword,
@@ -356,6 +356,33 @@ module.exports.getStats = async (req, res, next) => {
         next(createError(500, error.message));
     }
 };
+
+module.exports.getClassements = async (req, res, next) => {
+    try {
+        console.log('🎯 getClassements appelée');
+        console.log('🔍 req.query:', req.query);
+
+        const { sortBy = 'wins' } = req.query;
+        console.log('🔍 sortBy:', sortBy);
+
+        let sortOptions = {};
+        switch (sortBy) {
+            case 'wins': sortOptions = { 'stats.wins': -1 }; break;
+            case 'ratio': sortOptions = { 'stats.wins': -1, 'stats.losses': 1 }; break;
+            case 'gamesPlayed': sortOptions = { 'stats.gamesPlayed': -1 }; break;
+        }
+        
+        const users = await UsersModel.find({ 'stats.gamesPlayed': { $gt: 0 } })
+            .sort(sortOptions)
+            .select('username avatar stats createdAt')
+            .limit(100);
+            
+        res.json({ success: true, users });
+    } catch (error) {
+        console.error('❌ ERREUR dans getClassements:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+}
 
 module.exports.activateAccount = async (req, res) => {
     try {

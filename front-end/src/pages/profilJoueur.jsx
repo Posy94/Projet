@@ -33,7 +33,7 @@ function ProfilJoueur() {
         <div className="max-x-2xl mx-auto p-6 bg-white rounded shadow-md mt-10">
             <h2 className="text-2xl font-bold mb-4 text-center">Profil du joueur</h2>
 
-            {/* FORMULAIRE DE MISE A JOUR DE L4UTILISATEUR */}
+            {/* FORMULAIRE DE MISE A JOUR DE L'UTILISATEUR */}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <input 
                 className="w-full border px-4 py-2 rounded"

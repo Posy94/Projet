@@ -1,7 +1,27 @@
 const SalonsModel = require('../models/salons.model');
 const suiviController = require('../controllers/suivis.controller');
+const verifieToken = require('../middlewares/auth');
+const { verifieTokenSocket } = verifieToken;
 const RecompensesController = require('../controllers/recompenses.controller');
 const mongoose = require('mongoose');
+
+// CLEANUP DES SALONS ABANDONNES
+const cleanupAbandonedSalons = async () => {
+    try {
+        const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+        
+        const result = await SalonsModel.deleteMany({
+            status: 'waiting',
+            createdAt: { $lt: twoMinutesAgo }
+        });
+        
+        if (result.deletedCount > 0) {
+            console.log(`🧹 ${result.deletedCount} salons abandonnés supprimés`);
+        }
+    } catch (error) {
+        console.error('❌ Erreur cleanup salons:', error);
+    }
+};
 
 const UsersModel = require('../models/users.model');
 const InvitationsModel = require('../models/invitations.model');
@@ -75,14 +95,23 @@ const handleSendInvitation = async (io, socket, data) => {
 };
 
 const handleAcceptInvitation = async (io, socket, data) => {
+    console.log('🎯 SERVEUR: handleAcceptInvitation DÉBUT');
+    console.log('📥 SERVEUR: Données:', data);
+
     try {
+        
         const { invitationId } = data;
+        console.log('🔍 SERVEUR: Recherche invitation ID:', invitationId);
 
         const invitation = await invitationsModel.findById(invitationId)
             .populate('fromUser', 'username avatar currentSocketId')
             .populate('toUser', 'username avatar')
+
+            console.log('📋 SERVEUR: Invitation trouvée:', invitation);
         
             if (!invitation || invitation.status !== 'pending') {
+                console.log('❌ SERVEUR: Invitation introuvable ou pas pending');
+                console.log('❌ SERVEUR: Status actuel:', invitation?.status);
                 return socket.emit('invitation_error', {
                     success: false,
                     message: 'Invitation introuvable ou expirée'
@@ -94,19 +123,14 @@ const handleAcceptInvitation = async (io, socket, data) => {
             invitation.respondedAt = new Date();
             await invitation.save();
 
-            // MARQUER COMME ACCEPTEE
-            invitation.status = 'accepted';
-            invitation.respondedAt = new Date();
-            await invitation.save();
-
             // NOTIFIER L'EXPEDITEUR
-            if (invitation.fromUser,currentSocketId) {
+            if (invitation.fromUser.currentSocketId) {
                 io.to(invitation.fromUser.currentSocketId).emit('invitation_accepted_by_user', {
                     invitationId: invitation._id,
                     acceptedBy: {
                         id: invitation.toUser._id,
                         username: invitation.toUser.username,
-                        avatar: invitation.toUSer.avatar
+                        avatar: invitation.toUser.avatar
                     },
                     salonId: invitation.salonId,
                     message: `${invitation.toUser.username} a accepté votre invitation !`
@@ -206,6 +230,9 @@ const handleUserDisconnection = async (socket) => {
 
                     // ANNULER LES INVITATIONS EN ATTENTE
                     await invitationsModel.cancelPendingInvitations(user._id);
+
+                    // 🧹 CLEANUP SALONS ABANDONNÉS À LA DÉCONNEXION
+                    await cleanupAbandonedSalons();
                 }
             }, 15000);
         }
@@ -221,11 +248,15 @@ const startCleanupInterval = () => {
         try {
             // await usersModel.cleanupInactiveUsers();
             await invitationsModel.expireOldInvitations();
+            
+            // 🧹 CLEANUP SALONS ABANDONNÉS PÉRIODIQUE
+            await cleanupAbandonedSalons();
+
             console.log('🧹 Nettoyage effectué');
         } catch (error) {
             console.error('❌ Erreur nettoyage:', error);
         }
-    }, 5 * 60 * 1000);
+    }, 30000);
 };
 
 const updateUserStats = async (userId, result) => {
@@ -379,6 +410,22 @@ module.exports = (io) => {
             { path: 'userCreator', select: 'username email' }
         ]
 
+        // REJOINDRE LE SALON PERSONNEL
+        socket.on('authenticate', async (data) => {
+            try {
+                const { userId, username } = data;
+                await handleUserConnection(socket, userId);
+
+                // 🔥 AJOUTE CE DEBUG
+                console.log(`🏠 User ${username} rejoint room: user_${userId}`);
+                console.log(`🔌 Socket ${socket.id} authentifié pour user ${userId}`);
+
+            } catch (error) {
+                console.error('❌ Erreur authenticate:', error);
+            }
+        });
+
+
         // REJOINDRE UN SALON
         socket.on('joinSalon', async ({ salonId, userId, username }) => {
             try {
@@ -448,6 +495,8 @@ module.exports = (io) => {
                 // 🆕 NOUVEAU JOUEUR
                 salon.players.push({
                     user: userId,
+                    userId: userId,
+                    username: username,
                     choice: null,
                     ready: false,
                     socketId: socket.id
@@ -459,7 +508,31 @@ module.exports = (io) => {
                 console.log(`🔄 Socket mise à jour pour ${username}: ${socket.id}`);
             }
 
-            await salon.save();
+            // 💾 SAUVEGARDER avec retry en cas de conflit
+            let saveAttempts = 0;
+            while (saveAttempts < 3) {
+                try {
+                    await salon.save();
+                    break;
+                } catch (error) {
+                    if (error.name === 'VersionError') {
+                        saveAttempts++;
+                        console.log(`⚠️ Conflit version, tentative ${saveAttempts}/3`);
+                        // Recharger le salon et réessayer
+                        salon = await SalonsModel.findOne({ salonId })
+                            .populate('players.user', 'username email')
+                            .populate('userCreator', 'username email');
+                        continue;
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+
+            if (saveAttempts >= 3) {
+                console.error('❌ Impossible de sauvegarder après 3 tentatives');
+                return;
+            }
 
             socket.userId = userId;
             socket.salonId = salonId;
@@ -1131,23 +1204,57 @@ module.exports = (io) => {
         });
         
         // ENVOI D'INVITATION
-        socket.on ('send_invitation', (data) => {
+        socket.on('send_invitation', (data) => {
             if (!socket.userId) {
                 return socket.emit('auth_error', { message: 'Non authentifié' });
             }
-            
+
             data.fromUserId = socket.userId;
             handleSendInvitation(io, socket, data);
         });
-        
+
         // ACCEPTATION D'INVITATION
-        socket.on('accept_invitation', (data) => {
+        socket.on('accept_invitation', async (data) => {
+            console.log('📥 SERVEUR: Événement accept_invitation reçu !');
+            console.log('📥 SERVEUR: Données reçues:', data);
+            console.log('👤 SERVEUR: Socket user ID:', socket.userId);
+
             if (!socket.userId) {
-                return socket.emit('auth_error', { message: 'Non authentifié' });
+                console.log('⚠️ SERVEUR: Pas d\'userId, tentative récupération token...');
+
+                // ✅ RÉCUPÈRE LE TOKEN
+                let token = socket.handshake.auth?.token;
+                if (!token) {
+                    const authHeader = socket.handshake.headers.authorization;
+                    if (authHeader && authHeader.startsWith('Bearer ')) {
+                        token = authHeader.split(' ')[1];
+                    }
+                }
+
+                console.log('🔍 SERVEUR: Token trouvé:', !!token);
+
+                if (token) {
+                    try {
+                        // UTILISE LE MIDDLEWARE
+                        const decoded = verifieTokenSocket(token);
+                        socket.userId = decoded.userId;
+                        console.log('✅ SERVEUR: UserId récupéré via middleware:', socket.userId);
+                    } catch (error) {
+                        console.log('❌ SERVEUR: Erreur token middleware:', error.message);
+                        return socket.emit('auth_error', { message: 'Token invalide' });
+                    }
+                } else {
+                    console.log('❌ SERVEUR: Aucun token trouvé');
+                    return socket.emit('auth_error', { message: 'Non authentifié' });
+                }
             }
-            
+
+            console.log('✅ SERVEUR: Authentification OK, appel handleAcceptInvitation');
             handleAcceptInvitation(io, socket, data);
         });
+
+
+
         
         // DECLIN D'INVITATION
         socket.on('decline_invitation', (data) => {

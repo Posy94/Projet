@@ -38,4 +38,21 @@ if (!token) {
   }
 }
 
+// ✅ NOUVELLE FONCTION POUR WEBSOCKET
+const verifieTokenSocket = (token) => {
+  if (!token) {
+    throw new Error("Aucun token fourni");
+  }
+
+  try {
+    const verified = jwt.verify(token, process.env.TOKEN_SIGNATURE);
+    console.log("✅ Token vérifié pour WebSocket:", verified);
+    return { userId: verified.userId }; // ✅ Retourne l'objet user
+  } catch (error) {
+    console.log("❌ Token invalide pour WebSocket:", error.message);
+    throw new Error("Token invalide");
+  }
+};
+
 module.exports = verifieToken;
+module.exports.verifieTokenSocket = verifieTokenSocket;

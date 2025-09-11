@@ -84,4 +84,21 @@ invitationsSchema.methods.decline = function() {
     return this.save();
 };
 
+// ANNULE TOUTES LES INVITATIONS EN ATTENTE D'UN UTILISATEUR QUAND IL SE DECONNECTE
+invitationsSchema.statics.cancelPendingInvitations = function(userId) {
+    return this.updateMany(
+        {
+            $or: [
+                { fromUser: userId },
+                { toUser: userId }
+            ],
+            status: 'pending'
+        },
+        {
+            status: 'cancelled',
+            updatedAt: new Date()
+        }
+    );
+};
+
 module.exports = mongoose.model('invitations', invitationsSchema);

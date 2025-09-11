@@ -158,7 +158,10 @@ const salonController = {
     // LES SALONS
     getAllSalons: async (req, res) => {
         try {
-            const salons = await SalonsModel.find()
+            const salons = await SalonsModel.find({
+                status: 'waiting',     // 🎯 Uniquement les salons en attente
+                gameMode: 'pvp'        // 🎯 Uniquement les salons PVP
+            })
                 .populate('userCreator', 'username')
                 .populate('players.user', 'username')
                 .sort({ createdAt: -1 });
@@ -168,7 +171,7 @@ const salonController = {
                 salons: salons
             });
         } catch (error) {
-            console.error('Erreur getAllSalons:', error);            
+            console.error('Erreur getAllSalons:', error);
             res.status(500).json({
                 success: false,
                 message: "Erreur serveur",
@@ -176,6 +179,7 @@ const salonController = {
             });
         }
     },
+
 
     // LES SALONS DE L'UTILISATEUR
     getUserSalons: async (req, res) => {
@@ -211,6 +215,9 @@ const salonController = {
 
     // CREER PARTIE IA
     createAISalon: async (req, res) => {
+        console.log('🔍 Date serveur:', new Date());
+        console.log('🔍 Locale serveur:', new Date().toLocaleString());
+        console.log('🔍 Timezone serveur:', Intl.DateTimeFormat().resolvedOptions().timeZone);
         try {
             const userId = req.user.id;
             const salonId = uuidv4();

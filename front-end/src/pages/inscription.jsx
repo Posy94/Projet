@@ -66,7 +66,7 @@ function Inscription() {
 
     return (
         <div className="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md mt-10">
-            <h2 className="text-2xl font-bold mb-4 text-center">Inscription</h2>
+            <h2 className="text-2xl font-bold mb-4 text-green-600 text-center">Inscription</h2>
 
             {/* Affichage de l'erreur */}
             {error && (
@@ -125,12 +125,12 @@ function Inscription() {
                 </div>
                 
                 
-                <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                <button type="submit" className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">
                     Créer un compte
                 </button>
             </form>
             <p className="mt-4 text-center text-sm">
-                Déjà un compte ? <Link to="/connexion" className="text-blue-600 hover:underline">Se connecter</Link>
+                Déjà un compte ? <Link to="/connexion" className="text-purple-600 hover:underline">Se connecter</Link>
             </p>
         </div>
     );

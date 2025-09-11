@@ -14,9 +14,7 @@ import CreationSalon from './pages/creationSalon';
 import Cgu from './pages/cgu';
 import APropos from './pages/aPropos';
 import Contact from './pages/contact';
-import Amis from './pages/amis';
 import Classements from './pages/classements';
-import Defis from './pages/defis';
 import Historiques from './pages/historiques';
 import Jeu from './pages/jeu';
 import ListeSalons from './pages/listeSalons';
@@ -51,7 +49,7 @@ function AppContent() {
           {/* FONCTIONNALITE MULTIJOUEUR */}
           <Route path='/creationSalon' element={<CreationSalon/>}/>
           <Route path='/listeSalons' element={<ListeSalons/>}/>
-          <Route path='/salon' element={<Salon/>}/>
+          <Route path='/salon/:salonId' element={<Salon/>}/>
           <Route path='/waiting-room/:salonId' element={<WaitingRoom/>}/>
           {/* JEU */}
           <Route path='/jeu' element={<div className="text-center mt-10">
@@ -62,9 +60,7 @@ function AppContent() {
           </div>}/>
           <Route path='/jeu/:salonId' element={<Jeu user={user}/>}/>
           {/* CONTENU POST-JEU */}
-          <Route path='/amis' element={<Amis/>}/>
           <Route path='/classements' element={<Classements/>}/>
-          <Route path='/defis' element={<Defis/>}/>
           <Route path='/historiques' element={<Historiques/>}/>
           <Route path='/statistiques' element={<Statistiques/>}/>
           <Route path='/recompenses' element={<Recompenses/>}/>

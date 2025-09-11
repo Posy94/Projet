@@ -97,8 +97,8 @@ const Home = () => {
     if (loading) return <LoadingSpinner />;
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 to-purple-200 px-4">
-            <h1 className="text-4xl md:text-5xl font-bold text-blue-700 text-center mb-6">
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-green-100 to-purple-200 px-4">
+            <h1 className="text-4xl md:text-5xl font-bold text-green-700 text-center mb-6">
                 Bienvenue sur <span className="text-purple-600">Pierre - Feuille - Ciseaux</span>
             </h1>
 
@@ -118,7 +118,7 @@ const Home = () => {
                         <button
                             onClick={handlePlayVsAI}
                             disabled={creatingGame}
-                            className="group bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blu-600 hover:to-blue-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl tranform hover:-translate-y-1 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:tranform-none"
+                            className="group bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl tranform hover:-translate-y-1 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:tranform-none"
                         >
                             <div className="flex items-center justify-center space-x-3">
                                 <span className="text-2xl">🤖</span>
@@ -133,7 +133,7 @@ const Home = () => {
                         <button
                             onClick={handlePlayVsPlayer}
                             disabled={creatingGame}
-                            className="group bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blu-600 hover:to-blue-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl tranform hover:-translate-y-1 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:tranform-none"
+                            className="group bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl tranform hover:-translate-y-1 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:tranform-none"
                         >
                             <div className="flex items-center justify-center space-x-3">
                                 <span className="text-2xl">👥</span>
@@ -157,7 +157,7 @@ const Home = () => {
             {/* MESSAGE SI PAS CONNECTE */}
             {!user && (
                 <div className="bg-white rounded-2xl shadow-xl p-8 mb-12">
-                    <h3 className="text-2xl font-bold text-gray-800 mb-4">
+                    <h3 className="text-2xl font-bold text-green-700 mb-4">
                         🔐 Connecte-toi pour jouer !
                     </h3>
                     <p className="text-gray-600 mb-6">
@@ -170,22 +170,22 @@ const Home = () => {
                <div className="flex gap-6">
                    <Link
                        to="/inscription"
-                       className="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition duration-200 shadow"
+                       className="px-6 py-3 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition duration-200 shadow"
                    >
                        Créer un compte
                    </Link>
 
                    <Link
                        to="/connexion"
-                       className="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition duration-200 shadow"
+                       className="px-6 py-3 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition duration-200 shadow"
                    >
                        Se connecter
                    </Link>
                </div>
             )}
 
-            <div className="mt-8 text-sm text-gray-500">
-                <Link to={"/regles"} className="underline hover:text-blue-700">Voir les règles du jeu</Link>
+            <div className="mt-8 text-sm text-gray-900 py-3">
+                <Link to={"/regles"} className="underline hover:text-purple-600">Voir les règles du jeu</Link>
             </div>
 
             {/* MODAL DE CHOIX DE MODE */}

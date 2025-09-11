@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import io from "socket.io-client";
 import { useUser } from '../contexts/UserContext';
 import { useSocket } from '../contexts/SocketContext';
-
-const socket = io("http://localhost:8000");
 
 const Jeu = () => {
   
@@ -71,11 +68,13 @@ const Jeu = () => {
         });
 
         const salonData = await response.json();
-        console.log('✅ Salon récupéré:', salonData);
-        console.log('📅 Date salon:', salonData.createdAt);
-        console.log('🆔 ID salon:', salonData._id);
+        console.log('🔍 AVANT setSalon - salon actuel:', salon);
+        console.log('🔍 DONNÉES REÇUES de l\'API:', salonData);
+        console.log('🔍 DATE API:', salonData?.createdAt);
+        console.log('🔍 DATE ACTUELLE salon:', salon?.createdAt);
 
         setSalon(salonData);
+        console.log('🔍 DATA QUI VA ÊTRE DANS SALON:', salonData);
         setIsAIGame(salonData.gameType === 'ai');
 
       } catch (error) {
@@ -86,6 +85,12 @@ const Jeu = () => {
     fetchSalon();
   }, [salonId]);
 
+  useEffect(() => {
+    if (salon) {
+      console.log('✅ SALON STATE MIS À JOUR:', salon);
+      console.log('✅ DATE DU SALON:', salon.createdAt);
+    }
+  }, [salon]);
 
   useEffect(() => {
     console.log('🔴 SCORES CHANGED:', scores);
@@ -98,6 +103,24 @@ const Jeu = () => {
   ready: p?.ready,
   choice: p?.choice
   })));
+
+  useEffect(() => {
+    let timeoutId;
+
+    if (salon?.status === 'waiting') {
+      // ⚠️ Alerte si salon reste en waiting 1min45
+      timeoutId = setTimeout(() => {
+        setNotification({
+          type: 'warning',
+          message: 'Le salon sera supprimé dans 15 secondes si aucun joueur ne rejoint...'
+        });
+      }, 105000); // 1min45
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [salon?.status]);
 
   useEffect(() => {
     if (loading || !user) return
@@ -492,7 +515,7 @@ const Jeu = () => {
         </div>
       )}
 
-      <div>
+      {/* <div>
         <h3>📊 Scores</h3>
         {salon?.gameType === 'pvp' ? (
           // Mode PVP 
@@ -505,7 +528,42 @@ const Jeu = () => {
           <p>Vous: {scores[0] || 0} - IA: {scores[1] || 0}</p>
         )}
         <p>🎯 Premier à 3 victoires gagne !</p>
+      </div> */}
+      <div>
+        <h3>📊 Scores</h3>
+
+        {salon?.players?.length >= 2 && salon?.players?.[1]?.user ? (
+          // Mode PVP - Affichage personnalisé "Vous vs Adversaire"
+          (() => {
+            const currentUserId = user?.id;
+            const player1 = salon?.players?.[0];
+            const player2 = salon?.players?.[1];
+
+            // 🎯 UTILISER LES SCORES LOCAUX (MIS À JOUR EN TEMPS RÉEL)
+            const player1Score = scores[0] || 0;
+            const player2Score = scores[1] || 0;
+
+
+            // 🎯 IDENTIFIER QUI EST QUI
+            const isPlayer1 = (player1?.user?._id || player1?.userId)?.toString() === currentUserId?.toString();
+
+            const yourScore = isPlayer1 ? player1Score : player2Score;
+            const opponentScore = isPlayer1 ? player2Score : player1Score;
+            const opponentName = isPlayer1
+              ? (player2?.user?.username || player2?.username || 'Joueur 2')
+              : (player1?.user?.username || player1?.username || 'Joueur 1');
+
+            return (
+              <p>Vous: {yourScore} - {opponentName}: {opponentScore}</p>
+            );
+          })()
+        ) : (
+          // Mode IA
+          <p>Vous: {scores[0] || 0} - IA: {scores[1] || 0}</p>
+        )}
+        <p>🎯 Premier à 3 victoires gagne !</p>
       </div>
+
 
 
 

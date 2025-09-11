@@ -15,6 +15,7 @@ router.put('/profile', verifieToken, authController.updateProfile);
 router.put('/profile/avatar', verifieToken, authController.updateAvatar);
 router.put('/profile/password', verifieToken, authController.changePassword);
 router.get('/profile/stats', verifieToken, authController.getStats);
+router.get('/classements', authController.getClassements);
 
 
 

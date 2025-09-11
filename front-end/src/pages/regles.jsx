@@ -3,7 +3,7 @@ import React from "react";
 const Regles = () => {
     return (
         <div className="mx-w-3xl mx-auto px-6 py-10 bg-white shadow-md rounded-lg mt-10">
-            <h1 className="text-3xl font-bold text-blue-600 text-center mb-6">
+            <h1 className="text-3xl font-bold text-green-700 text-center mb-6">
                 Règles du jeu : Pierre - Feuille - Ciseaux ✊✋✌️
             </h1>
             <div className="space-y-4 text-gray-700 text-lg">

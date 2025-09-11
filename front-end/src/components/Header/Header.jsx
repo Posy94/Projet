@@ -56,7 +56,7 @@ const Header = () => {
                 {/* BOUTON BURGER POUR LES MOBILES */}
                 <button
                     onClick={toggleMenu}
-                    className="md:hidden fixed top-5 left-5 z-[1000] bg-slate-700 text-white border-none p-3 rounded-lg cursor-pointer shadow-[0_2px_10px_rgba(0,0,0,0.2)] transition-all duration-200 hover:bg-slate-600 hover:scale-105"
+                    className="md:hidden fixed top-5 left-5 z-[1000] bg-green-700 text-white border-none p-3 rounded-lg cursor-pointer shadow-[0_2px_10px_rgba(0,0,0,0.2)] transition-all duration-200 hover:bg-green-600 hover:scale-105"
                 >
                     <div className="w-[25px] h-5 relative flex flex-col justify-between">  
                         <span className={`w-full h-[3px] bg-white transition-all duration-300 ease-in-out transform origin-center ${
@@ -76,7 +76,7 @@ const Header = () => {
                 {user && (
                     <button
                         onClick={toggleProfile}
-                        className="md:hidden fixed top-5 right-5 bg-blue-600 hover:bg-blue-700 text-white border-none rounded-full w-14 h-14 text-2xl cursor-pointer z-[2000] shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105"
+                        className="md:hidden fixed top-5 right-5 bg-purple-600 hover:bg-purple-700 text-white border-none rounded-full w-14 h-14 text-2xl cursor-pointer z-[2000] shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105"
                         title="Ouvrir le profil"
                     >
                         {user.avatar || '👤'}
@@ -89,14 +89,14 @@ const Header = () => {
                     {/* LOGO + NAVIGATION GAUCHE */}
                     <div className="flex items-center space-x-8">
                         {/* LOGO */}
-                        <h1 className="text-xl font-bold text-blue-600">PFC</h1>
+                        <h1 className="text-xl font-bold text-green-600">PFC</h1>
 
                         {/* LIENS PRINCIPAUX */}
                         <ul className="flex items-center space-x-6 list-none m-0 p-0">
                             <li className="m-0">
                                 <NavLink
                                     to='/'
-                                    className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-[#3182ce] active:font-bold"
+                                    className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-purple-700 active:font-bold"
                                 >
                                     Accueil
                                 </NavLink>
@@ -104,7 +104,7 @@ const Header = () => {
                             <li className="m-0">
                                 <NavLink
                                     to='/regles'
-                                    className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-[#3182ce] active:font-bold"
+                                    className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-purple-700 active:font-bold"
                                 >
                                     Règles
                                 </NavLink>
@@ -112,15 +112,23 @@ const Header = () => {
                             <li className="m-0">
                                 <NavLink
                                     to='/aPropos'
-                                    className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-[#3182ce] active:font-bold"
+                                    className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-purple-700 active:font-bold"
                                 >
                                     À propos
                                 </NavLink>
                             </li>
                             <li className="m-0">
                                 <NavLink
+                                    to='/classements'
+                                    className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-purple-700 active:font-bold"
+                                >
+                                    Classements
+                                </NavLink>
+                            </li>
+                            <li className="m-0">
+                                <NavLink
                                     to='/contact'
-                                    className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-[#3182ce] active:font-bold"
+                                    className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-purple-700 active:font-bold"
                                 >
                                     Contact
                                 </NavLink>
@@ -135,7 +143,7 @@ const Header = () => {
                             // UTILISATEUR CONNECTÉ
                             <button
                                 onClick={toggleProfile}
-                                className="flex items-center space-x-2 text-[#1a202c] hover:text-[#3182ce] px-3 py-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
+                                className="flex items-center space-x-2 text-[#1a202c] hover:text-purple-700 px-3 py-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
                             >
                                 <span className="text-lg">{user.avatar || '👤'}</span>
                                 <span className="font-medium">{user.username}</span>
@@ -147,7 +155,7 @@ const Header = () => {
                                 <li className="m-0">
                                     <NavLink
                                         to='/inscription'
-                                        className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-[#3182ce] active:font-bold"
+                                        className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-purple-700 active:font-bold"
                                     >
                                         Inscription
                                     </NavLink>
@@ -155,7 +163,7 @@ const Header = () => {
                                 <li className="m-0">
                                     <NavLink
                                         to='/connexion'
-                                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 no-underline"
+                                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-all duration-200 no-underline"
                                     >
                                         Connexion
                                     </NavLink>
@@ -177,7 +185,7 @@ const Header = () => {
 
                 {/* MENU COULISSANT POUR LES MOBILES */}
 
-                <nav className={`md:hidden fixed top-0 w-[300px] h-screen bg-gradient-to-br from-slate-700 to-slate-600 transition-all duration-300
+                <nav className={`md:hidden fixed top-0 w-[300px] h-screen bg-gradient-to-br from-green-700 to-green-600 transition-all duration-300
                     ease-[cubic-bezier(0.25,0.46,0.45,0.94)] z-[999] shadow-[2px_0_10px_rgba(0,0,0,0.3)] overflow-y-auto max-[480px]:w-[280px] ${
                         isMenuOpen ? 'left-0' : '-left-[300px] max-[480px]:-left-[280px]'
                     }`}>
@@ -220,15 +228,15 @@ const Header = () => {
                             </NavLink>
                         </li>
                         <li className="my-[10px] mx-0">
-                            <NavLink to='/contact' onClick={toggleMenu}
+                            <NavLink to='/classements' onClick={toggleMenu}
                             className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">
-                                Contact
+                                Classements
                             </NavLink>
                         </li>
                         <li className="my-[10px] mx-0">
-                            <NavLink to='/cgu' onClick={toggleMenu}
+                            <NavLink to='/contact' onClick={toggleMenu}
                             className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">
-                                Conditions générales d'utilisation
+                                Contact
                             </NavLink>
                         </li>
                     </ul>

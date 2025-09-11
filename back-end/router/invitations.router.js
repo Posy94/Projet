@@ -9,6 +9,9 @@ router.get('/players/online', verifieToken, InvitationsController.getOnlineUsers
 // RECUPERER MES INVITATIONS RECUES
 router.get('/received', verifieToken, InvitationsController.getUserInvitations);
 
+// ENVOYER UNE INVITATION
+router.post('/send', verifieToken, InvitationsController.sendInvitation);
+
 // ACCEPTER UNE INVITATION
 router.post('/accept/:invitationId', verifieToken, InvitationsController.acceptInvitation);
 

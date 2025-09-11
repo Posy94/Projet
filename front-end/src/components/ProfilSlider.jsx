@@ -193,7 +193,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
 
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-600 to-purple-600 text-white">
                     <h2 className="text-xl font-bold">👤 Mon Profil</h2>
                     <button
                         onClick={onClose}
@@ -226,7 +226,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex-shrink-0 px-3 py-3 text-sm font-medium whitespace-nowrap transition-colors min-w-0 ${activeTab === tab.id
-                                    ? 'border-b-2 border-blue-500 text-blue-600 bg-blue-50'
+                                    ? 'border-b-2 border-green-500 text-purple-600 bg-green-50'
                                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                                 }`}
                         >
@@ -259,7 +259,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                                     type="text"
                                     value={formData.username}
                                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     required
                                 />
                             </div>
@@ -272,7 +272,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                                     type="email"
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     required
                                 />
                             </div>
@@ -285,7 +285,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                                     value={formData.bio}
                                     onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                                     rows="3"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                                     placeholder="Parlez-nous de vous..."
                                 />
                             </div>
@@ -293,9 +293,9 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="w-full bg-gradient-to-r from-purple-500 to-purple-900 text-white py-2 px-4 rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
-                                {loading ? '⏳ Mise à jour...' : '✅ Mettre à jour'}
+                                {loading ? '⏳ Mise à jour...' : 'Mettre à jour'}
                             </button>
                         </form>
                     )}
@@ -374,7 +374,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                                     type="password"
                                     value={passwordData.currentPassword}
                                     onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     required
                                 />
                             </div>
@@ -387,7 +387,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                                     type="password"
                                     value={passwordData.newPassword}
                                     onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     required
                                 />
                             </div>
@@ -400,7 +400,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                                     type="password"
                                     value={passwordData.confirmPassword}
                                     onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     required
                                 />
                             </div>
@@ -408,7 +408,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="w-full bg-gradient-to-r from-purple-500 to-purple-900 text-white py-2 px-4 rounded-lg hover:bg-purple-700 focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 {loading ? '⏳ Modification...' : '🔐 Changer le mot de passe'}
                             </button>
@@ -418,7 +418,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                 <div className="p-4 border-t bg-gray-50">
                     <button
                         onClick={onLogout}
-                        className="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-3 px-4 rounded-lg hover:from-red-600 hover:to-red-700 focus:ring-2 focus:ring-red-500 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg"
+                        className="w-full bg-gradient-to-r from-indigo-500 to-indigo-900 text-white py-3 px-4 rounded-lg hover:from-red-600 hover:to-red-700 focus:ring-2 focus:ring-red-500 transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg"
                     >
                         <span>🚪</span>
                         Se déconnecter
