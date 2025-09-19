@@ -18,6 +18,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
     const [selectedAvatar, setSelectedAvatar] = useState(user?.avatar || '👤');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
+    const [userRecompenses, setUserRecompenses] = useState([]);
 
     // Récupérer les stats au chargement
     useEffect(() => {
@@ -51,6 +52,24 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
             console.log('❌ Erreur récupération stats:', error.message);
             console.log('❌ Status:', error.response?.status);
             // Vérifier si c'est un problème d'auth
+            if (error.response?.status === 401) {
+                navigate('/connexion');
+            }
+        }
+    };
+
+    const fetchUserRecompenses = async () => {
+        try {
+            const response = await axios.get('http://localhost:8000/api/recompenses/user', {
+                withCredentials: true
+            });
+
+            if (response.headers['content-type']?.includes('application/json')) {
+                console.log('✅ Récompenses reçues:', response.data);
+                setUserRecompenses(response.data);
+            }
+        } catch (error) {
+            console.log('❌ Erreur récupération récompenses:', error.message);
             if (error.response?.status === 401) {
                 navigate('/connexion');
             }
@@ -96,6 +115,7 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
     const refreshStats = async () => {
         if (user) {
             await fetchUserStats();
+            await fetchUserRecompenses();
         }
     };
 
@@ -236,26 +256,49 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="flex border-b bg-white overflow-x-auto  min-w-0">
-                    {[
-                        { id: 'profile', label: '📝 Profil', icon: '📝' },
-                        { id: 'stats', label: '📊 Stats', icon: '📊' },
-                        { id: 'avatar', label: '🖼️ Avatar', icon: '🖼️' },
-                        { id: 'password', label: '🔐 MDP', icon: '🔐' }
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex-shrink-0 px-3 py-3 text-sm font-medium whitespace-nowrap transition-colors min-w-0 ${activeTab === tab.id
-                                    ? 'border-b-2 border-green-500 text-purple-600 bg-green-50'
-                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                                }`}
-                        >
-                            <span className="hidden sm:inline">{tab.label}</span>
-                            <span className="sm:hidden text-lg">{tab.icon}</span>
-                        </button>
-                    ))}
+                <div className="bg-white border-b">
+                    {/* Ligne 1 : Profil, Stats, Récompenses */}
+                    <div className="flex">
+                        {[
+                            { id: 'profile', label: '📝 Profil', icon: '📝' },
+                            { id: 'stats', label: '📊 Stats', icon: '📊' },
+                            { id: 'recompenses', label: '🏆 Badges', icon: '🏆' }
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex-1 px-3 py-3 text-sm font-medium transition-colors ${activeTab === tab.id
+                                        ? 'border-b-2 border-green-500 text-purple-600 bg-green-50'
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <span className="hidden sm:inline">{tab.label}</span>
+                                <span className="sm:hidden text-lg">{tab.icon}</span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Ligne 2 : Avatar, Mot de passe */}
+                    <div className="flex border-t border-gray-100">
+                        {[
+                            { id: 'avatar', label: '🖼️ Avatar', icon: '🖼️' },
+                            { id: 'password', label: '🔐 MDP', icon: '🔐' }
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex-1 px-3 py-3 text-sm font-medium transition-colors ${activeTab === tab.id
+                                        ? 'border-b-2 border-green-500 text-purple-600 bg-green-50'
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <span className="hidden sm:inline">{tab.label}</span>
+                                <span className="sm:hidden text-lg">{tab.icon}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
+
 
                 {/* Message d'état */}
                 {message && (
@@ -351,6 +394,98 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                                 <div className="text-center py-8">
                                     <div className="animate-spin text-2xl mb-2">⏳</div>
                                     <p className="text-gray-500">Chargement des statistiques...</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Onglet Récompenses */}
+                    {activeTab === 'recompenses' && (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-gray-800">🏆 Mes Récompenses</h3>
+                                <div className="text-sm text-gray-500">
+                                    {userRecompenses?.length || 0} badge{(userRecompenses?.length || 0) > 1 ? 's' : ''}
+                                </div>
+                            </div>
+
+                            {userRecompenses && userRecompenses.length > 0 ? (
+                                <div className="space-y-3">
+                                    {/* Grouper par catégorie */}
+                                    {['parties', 'victoires', 'special'].map(category => {
+                                        const categoryRecompenses = userRecompenses.filter(r => r.recompense.category === category);
+                                        if (categoryRecompenses.length === 0) return null;
+
+                                        const categoryNames = {
+                                            'parties': '🎮 Parties jouées',
+                                            'victoires': '🏆 Victoires',
+                                            'special': '⭐ Spécial'
+                                        };
+
+                                        return (
+                                            <div key={category} className="space-y-2">
+                                                <h4 className="text-sm font-medium text-gray-600 border-b pb-1">
+                                                    {categoryNames[category]}
+                                                </h4>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    {categoryRecompenses.map((userRecompense) => (
+                                                        <div
+                                                            key={userRecompense._id}
+                                                            className="bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-3 relative overflow-hidden"
+                                                        >
+                                                            {/* Badge NEW si récent (moins de 7 jours) */}
+                                                            {new Date() - new Date(userRecompense.dateObtenue) < 7 * 24 * 60 * 60 * 1000 && (
+                                                                <div className="absolute top-1 right-1 bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
+                                                                    NEW!
+                                                                </div>
+                                                            )}
+
+                                                            <div className="text-center">
+                                                                <div className="text-2xl mb-1">
+                                                                    {userRecompense.recompense.icone}
+                                                                </div>
+                                                                <div className="text-sm font-semibold text-gray-800">
+                                                                    {userRecompense.recompense.nom}
+                                                                </div>
+                                                                <div className="text-xs text-gray-600 mt-1">
+                                                                    {userRecompense.recompense.description}
+                                                                </div>
+                                                                <div className="text-xs text-gray-500 mt-2">
+                                                                    🎯 {userRecompense.recompense.points} pts
+                                                                </div>
+                                                                <div className="text-xs text-gray-400 mt-1">
+                                                                    📅 {new Date(userRecompense.dateObtenue).toLocaleDateString('fr-FR')}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {/* Total des points */}
+                                    <div className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                                        <div className="text-center">
+                                            <div className="text-lg font-bold text-purple-600">
+                                                🎯 {userRecompenses.reduce((total, ur) => total + ur.recompense.points, 0)} points
+                                            </div>
+                                            <div className="text-sm text-gray-600">Total des récompenses</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-12">
+                                    <div className="text-6xl mb-4 opacity-50">🎯</div>
+                                    <h4 className="text-lg font-semibold text-gray-600 mb-2">
+                                        Aucune récompense pour le moment
+                                    </h4>
+                                    <p className="text-gray-500">
+                                        Joue des parties pour débloquer tes premiers badges !
+                                    </p>
+                                    <div className="mt-4 text-sm text-gray-400">
+                                        🎮 Première partie • 🏆 Première victoire • ⭐ Et bien plus...
+                                    </div>
                                 </div>
                             )}
                         </div>

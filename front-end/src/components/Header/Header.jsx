@@ -56,8 +56,7 @@ const Header = () => {
                 {/* BOUTON BURGER POUR LES MOBILES */}
                 <button
                     onClick={toggleMenu}
-                    className="md:hidden fixed top-5 left-5 z-[1000] bg-green-700 text-white border-none p-3 rounded-lg cursor-pointer shadow-[0_2px_10px_rgba(0,0,0,0.2)] transition-all duration-200 hover:bg-green-600 hover:scale-105"
-                >
+                    className="max-[939px]:block hidden fixed top-5 left-5 z-[1000] bg-green-700 text-white border-none p-3 rounded-lg cursor-pointer shadow-[0_2px_10px_rgba(0,0,0,0.2)] transition-all duration-200 hover:bg-green-600 hover:scale-105"                >
                     <div className="w-[25px] h-5 relative flex flex-col justify-between">  
                         <span className={`w-full h-[3px] bg-white transition-all duration-300 ease-in-out transform origin-center ${
                             isMenuOpen ? 'rotate-45 translate-y-[8.5px]' : ''
@@ -89,7 +88,7 @@ const Header = () => {
                     {/* LOGO + NAVIGATION GAUCHE */}
                     <div className="flex items-center space-x-8">
                         {/* LOGO */}
-                        <h1 className="text-xl font-bold text-green-600">
+                        <h1 className="text-xl font-bold text-green-600 hidden min-[940px]:block">
                             <img src="/assets/pfcLogoRond.png"
                                 alt="Logo rond montrant une pierre, une feuille et une paire de ciseaux en pleine nature"
                                 className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 flex-shrink-0 rounded-full object-cover" />

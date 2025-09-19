@@ -94,7 +94,7 @@ RecompenseDefinition.initializerRecompensesByDefault = async function() {
             name: 'Premiere Victoire',
             description: 'Remportez votre premier match',
             category: 'progression',
-            icon: 'trophy',
+            icon: '/images/recompenses/firstVictory.jpeg',
             color: 'bg-yellow-500',
             conditions: { type: 'victoires', value: 1 },
             points: 10
@@ -104,7 +104,7 @@ RecompenseDefinition.initializerRecompensesByDefault = async function() {
             name: 'Débutant',
             description: 'Jouez 10 parties',
             category: 'progression',
-            icon: 'star',
+            icon: '/images/recompenses/beginner.jpeg',
             color: 'bg-blue-500',
             conditions: { type: 'parties_jouees', value: 10 },
             points: 15
@@ -114,7 +114,7 @@ RecompenseDefinition.initializerRecompensesByDefault = async function() {
             name: 'Vétéran',
             description: 'Jouez 100 parties',
             category: 'progression',
-            icon: 'award',
+            icon: '/images/recompenses/veteran.jpeg',
             color: 'bg-purple-500',
             conditions: { type: 'parties_jouees', value: 100 },
             points: 50
@@ -124,7 +124,7 @@ RecompenseDefinition.initializerRecompensesByDefault = async function() {
             name: 'Série de 5',
             description: 'Gagnez 5 partie consécutives',
             category: 'series',
-            icon: 'zap',
+            icon: '/images/recompenses/seriesOfFive.jpeg',
             color: 'bg-orange-500',
             conditions: { type: 'series_victoires', value: 5 },
             points: 25
@@ -134,7 +134,7 @@ RecompenseDefinition.initializerRecompensesByDefault = async function() {
             name: 'Imparable',
             description: 'Gagnez 10 parties consécutives',
             category: 'series',
-            icon: 'target',
+            icon: '/images/recompenses/unstoppable.jpeg',
             color: 'bg-red-500',
             conditions: { type: 'series_victoires', value: 10 },
             points: 50
@@ -144,7 +144,7 @@ RecompenseDefinition.initializerRecompensesByDefault = async function() {
             name: 'Joueur Quotidien',
             description: 'Jouez 3 jours consécutifs',
             category: 'assiduite',
-            icon: 'calendar',
+            icon: '/images/recompenses/dailyPlayer.jpeg',
             color: 'bg-green-500',
             conditions: { type: 'jours_consecutifs', value: 3 },
             points: 20
@@ -154,7 +154,7 @@ RecompenseDefinition.initializerRecompensesByDefault = async function() {
             name: 'Maitre de la Pierre',
             description: 'Gagnez 20 parties avec Pierre',
             category: 'specialisation',
-            icon: 'shield',
+            icon: '/images/recompenses/stoneMaster.jpeg',
             color: 'bg-gray-600',
             conditions: { type: 'victoires_coup', value: 20, movePlayed: 'pierre' },
             points: 30
@@ -164,7 +164,7 @@ RecompenseDefinition.initializerRecompensesByDefault = async function() {
             name: 'Maitre de la Feuille',
             description: 'Gagnez 20 parties avec Feuille',
             category: 'specialisation',
-            icon: 'leaf',
+            icon: '/images/recompenses/leafMaster.jpeg',
             color: 'bg-green-600',
             conditions: { type: 'victoires_coup', value: 20, movePlayed: 'feuille' },
             points: 30
@@ -174,7 +174,7 @@ RecompenseDefinition.initializerRecompensesByDefault = async function() {
             name: 'Maitre des Ciseaux',
             description: 'Gagnez 20 parties avec Ciseaux',
             category: 'specialisation',
-            icon: 'scissors',
+            icon: '/images/recompenses/scissorsMaster.jpeg',
             color: 'bg-red-600',
             conditions: { type: 'victoires_coup', value: 20, movePlayed: 'ciseaux' },
             points: 30
@@ -184,7 +184,7 @@ RecompenseDefinition.initializerRecompensesByDefault = async function() {
             name: 'Equilibré',
             description: 'Gagnez au moins 10 parties avec chaque coup',
             category: 'specialisation',
-            icon: 'balance',
+            icon: '/images/recompenses/balanced.jpeg',
             color: 'bg-indigo-600',
             conditions: { type: 'victoires_equilibrees', value: 10 },
             points: 40
