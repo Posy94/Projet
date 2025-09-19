@@ -149,8 +149,10 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
         }
 
         setLoading(true);
+        setMessage('');
+
         try {
-            const response = await axios.put('http://localhost:8000/api/auth/change-password', passwordData, {
+            const response = await axios.put('http://localhost:8000/api/auth/profile/password', passwordData, {
                 withCredentials: true,
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -206,10 +208,29 @@ const ProfileSlider = ({ isOpen, onClose, user, updateUser, onLogout }) => {
                 {/* User Info */}
                 <div className="p-4 bg-gray-50 border-b">
                     <div className="flex items-center space-x-3">
-                        <div className="text-3xl">{user?.avatar || '👤'}</div>
-                        <div>
+                        <div className="relative">
+                            <div className="text-3xl">{user?.avatar || '👤'}</div>
+                            {/* ✅ BADGE EN OVERLAY SUR L'AVATAR */}
+                            {user?.role === 'superAdmin' && (
+                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                                    <span className="text-xs">👑</span>
+                                </div>
+                            )}
+                            {user?.role === 'admin' && (
+                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg">
+                                    <span className="text-xs">🛡️</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex-1">
                             <h3 className="font-semibold text-lg text-gray-800">{user?.username}</h3>
                             <p className="text-sm text-gray-500">{user?.email}</p>
+                            {/* ✅ RÔLE EN SOUS-TITRE */}
+                            {(user?.role === 'superAdmin' || user?.role === 'admin') && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                    {user?.role === 'superAdmin' ? '👑 Super Administrateur' : '🛡️ Administrateur'}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -72,26 +72,6 @@ module.exports.register = async (req, res, next) => {
                 message: 'Erreur lors de l\'envoi de l\'email d\'activation. Veuillez réessayer.'
             });
         }
-
-        // // Générer token
-        // const token = generateToken(user._id);
-        
-        // // Cookie avec TON nom "token"
-        // res.cookie('token', token, {
-        //     httpOnly: true,
-        //     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
-        //     sameSite: 'lax'
-        // });
-        
-        // res.status(201).json({
-        //     message: 'Inscription réussie',
-        //     user: {
-        //         id: user._id,
-        //         username: user.username,
-        //         email: user.email,
-        //         stats: user.stats
-        //     }
-        // });
         
     } catch (error) {
         console.error('❌ Erreur inscription:', error);
@@ -187,9 +167,9 @@ module.exports.login = async (req, res, next) => {
                 avatar: user.avatar,
                 bio: user.bio,
                 stats: user.stats,
-                isActivated: user.isActivated
+                isActivated: user.isActivated,
+                role: user.role
             },
-            token
         });
         
     } catch (error) {
@@ -221,20 +201,42 @@ module.exports.logout = (req, res) => {
 };
 
 module.exports.getProfile = async (req, res, next) => {
+    console.log("🚨🚨🚨 GETPROFILE APPELÉ 🚨🚨🚨"); // ✅ LOG IMPOSSIBLE À RATER
+    console.log("📍 URL demandée:", req.originalUrl);
+    console.log("📍 Méthode:", req.method);
+    console.log("📍 Headers Authorization:", req.headers.authorization);
     try {
+        console.log("🔍 === DEBUG GETPROFILE ===");
+        console.log("1. UserId reçu:", req.user.id);
        
         const user = await UsersModel.findById(req.user.id);
+
+        console.log("2. User trouvé en BDD:", user);
+        console.log("3. Role en BDD:", user?.role);
         
         if (!user) {
             return next(createError(404, 'Utilisateur non trouvé'));
         }
-        
-        res.json({
+
+        const userResponse = {
             id: user._id,
             username: user.username,
             email: user.email,
-            stats: user.stats
+            avatar: user.avatar,
+            bio: user.bio,
+            role: user.role,
+            stats: user.stats,
+            isActivated: user.isActivated
+        }
+
+        console.log("4. Réponse envoyée:", userResponse);
+        console.log("=========================");
+        
+        res.json({
+            success: true,
+            user: userResponse
         });
+
     } catch (error) {
         next(createError(500, error.message));
     }

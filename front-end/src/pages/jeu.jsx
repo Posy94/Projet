@@ -515,20 +515,6 @@ const Jeu = () => {
         </div>
       )}
 
-      {/* <div>
-        <h3>📊 Scores</h3>
-        {salon?.gameType === 'pvp' ? (
-          // Mode PVP 
-          <p>
-            {salon.players[0]?.user?.username || 'Joueur 1'}: {scores[0] || 0} -
-            {salon.players[1]?.user?.username || 'Joueur 2'}: {scores[1] || 0}
-          </p>
-        ) : (
-          // Mode IA
-          <p>Vous: {scores[0] || 0} - IA: {scores[1] || 0}</p>
-        )}
-        <p>🎯 Premier à 3 victoires gagne !</p>
-      </div> */}
       <div>
         <h3>📊 Scores</h3>
 

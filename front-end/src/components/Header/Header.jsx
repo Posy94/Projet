@@ -89,7 +89,11 @@ const Header = () => {
                     {/* LOGO + NAVIGATION GAUCHE */}
                     <div className="flex items-center space-x-8">
                         {/* LOGO */}
-                        <h1 className="text-xl font-bold text-green-600">PFC</h1>
+                        <h1 className="text-xl font-bold text-green-600">
+                            <img src="/assets/pfcLogoRond.png"
+                                alt="Logo rond montrant une pierre, une feuille et une paire de ciseaux en pleine nature"
+                                className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 flex-shrink-0 rounded-full object-cover" />
+                        </h1>
 
                         {/* LIENS PRINCIPAUX */}
                         <ul className="flex items-center space-x-6 list-none m-0 p-0">
@@ -101,6 +105,17 @@ const Header = () => {
                                     Accueil
                                 </NavLink>
                             </li>
+                            {/* CONDITION POUR GERER LES SALONS*/}
+                            {user && (user.role === 'admin' || user.role === 'superAdmin') && (
+                                <li className="m-0">
+                                    <NavLink
+                                        to='/listeSalons'
+                                        className="text-[#1a202c] no-underline px-3 py-2 transition-all duration-200 hover:text-purple-700 active:font-bold"
+                                    >
+                                        Gestion Salons
+                                    </NavLink>
+                                </li>
+                            )}
                             <li className="m-0">
                                 <NavLink
                                     to='/regles'
@@ -192,12 +207,28 @@ const Header = () => {
 
                     <ul className="list-none pt-[60px] px-5 pb-[60px] m-0 flex flex-col min-h-[calc(100vh-40px)] max-[480px]:px-[15px]">
 
-                            <li className="my-[10px] mx-0">
+                        <li className="flex justify-center items-center my-[10px] mx-0">
+                            <img
+                                src="/assets/pfcLogoRond.png"
+                                alt="Logo rond montrant une pierre, une feuille et une paire de ciseaux en pleine nature"
+                                className="w-24 h-24 rounded-full object-cover"
+                            />
+                        </li>
+                        <li className="my-[10px] mx-0">
                             <NavLink to='/' onClick={toggleMenu}
                             className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">
                                 Accueil
                             </NavLink>
                         </li>
+                        {/* CONDITION POUR GERER LES SALONS*/}
+                        {user && (user.role === 'admin' || user.role === 'superAdmin') && (
+                            <li className="my-[10px] mx-0">
+                                <NavLink to='/listeSalons' onClick={toggleMenu}
+                                    className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">
+                                    🛡️ Gestion Salons
+                                </NavLink>
+                            </li>
+                        )}
                         <li className="my-[10px] mx-0">
                             <NavLink to='/regles' onClick={toggleMenu}
                             className="text-white no-underline p-3 block rounded-[5px] transition-all duration-200 hover:bg-white/10 active:bg-white/20 active:font-bold max-[480px]:px-3 max-[480px]:py-[10px] max-[480px]:text-sm">

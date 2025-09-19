@@ -9,105 +9,185 @@ export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const [invitations, setInvitations] = useState([]);
     const [onlineUsers, setOnlineUsers] = useState([]);
-    const { user } = useUser();
+    const { user, loading } = useUser();
     const navigate = useNavigate();
 
+    // ✅ USEEFFECT PRINCIPAL CORRIGÉ
     useEffect(() => {
+        console.log('🔄 Socket useEffect - loading:', loading, 'user:', user?.username);
 
-        if (user) {
+        if (loading) {
+            console.log('⏳ Socket en attente du chargement...');
+            return;
+        }
 
-            console.log('🔌 Initialisation socket pour user:', user.username);
+        if (!user || !user.username) {
+            console.log('❌ Pas d\'utilisateur valide pour socket');
+            // ✅ NETTOYER LE SOCKET S'IL EXISTE
+            if (socket) {
+                console.log('🧹 Nettoyage socket existant...');
+                socket.disconnect();
+                setSocket(null);
+            }
+            return;
+        }
 
-            const token = localStorage.getItem('token');
-            console.log('🔑 Token trouvé:', !!token);
- 
-            // CONNEXION WEBSOCKET AVEC L'UTILISATEUR AUTHENTIFIE
-            const newSocket = io('http://localhost:8000', {
-                auth: {
-                    token: token
-                },
-                extraHeaders: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+        // ✅ ÉVITER LA DOUBLE CONNEXION
+        if (socket && socket.connected) {
+            console.log('🔌 Socket déjà connecté pour:', user.username);
+            return;
+        }
 
-            newSocket.on('connect', () => {
-                console.log('🔌 Socket connecté avec ID:', newSocket.id);
-            });
+        console.log('🔌 Initialisation socket pour user:', user.username);
+        console.log('🎭 Role user:', user.role);
 
-            // AUTHENTIFICATION AUTOMATIQUE
+        // ✅ NETTOYER L'ANCIEN SOCKET AVANT D'EN CRÉER UN NOUVEAU
+        if (socket) {
+            console.log('🧹 Suppression ancien socket...');
+            socket.disconnect();
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log('❌ Pas de token pour socket');
+            return;
+        }
+
+        console.log('🔑 Token trouvé:', !!token);
+
+        // ✅ CONNEXION WEBSOCKET AMÉLIORÉE
+        const newSocket = io('http://localhost:8000', {
+            auth: {
+                token: token
+            },
+            extraHeaders: {
+                Authorization: `Bearer ${token}`
+            },
+            withCredentials: true,
+            transports: ['websocket', 'polling'],
+            // ✅ OPTIONS DE RECONNEXION AMÉLIORÉES
+            reconnection: true,
+            reconnectionAttempts: 3,
+            reconnectionDelay: 1000,
+            timeout: 10000,
+            forceNew: true // ✅ FORCE UNE NOUVELLE CONNEXION
+        });
+
+        // ✅ GESTION DES ÉVÉNEMENTS DE CONNEXION
+        newSocket.on('connect', () => {
+            console.log('🔌 Socket connecté avec ID:', newSocket.id);
+            
+            // Authentification immédiate
             newSocket.emit('authenticate', {
                 userId: user.id,
-                username: user.username
+                username: user.username,
+                role: user.role
             });
-
             console.log('🔐 Authentification envoyée pour user:', user.username);
+        });
 
-            // ECOUTE DES INVITATIONS
-            newSocket.on('invitation_received', (invitation) => {
-                console.log('🔔 INVITATION REÇUE VIA WEBSOCKET:', invitation);
-                setInvitations(prev => [...prev, invitation]);
-            });
+        newSocket.on('connect_error', (error) => {
+            console.error('❌ Erreur connexion socket:', error.message);
+        });
 
-            // ACCEPTATION CONFIRMEE POUR CELUI QUI ACCEPTE
-            newSocket.on('invitation_accepted', (data) => {
-                console.log('✅ Mon acceptation confirmée:', data);
-                if (data.success && data.salonId) {
-                    navigate(`/jeu/${data.salonId}`);
-                    // Nettoyer les invitations
-                    setInvitations([]);
-                }
-            });
+        newSocket.on('disconnect', (reason) => {
+            console.log('🔌 Socket déconnecté:', reason);
+            // ✅ NE PAS TENTER DE RECONNECTER MANUELLEMENT
+            if (reason === 'io client disconnect') {
+                console.log('🛑 Déconnexion manuelle, pas de reconnexion');
+            }
+        });
 
-            // QUELQU'UN ACCEPTE MON INVITATION
-            newSocket.on('invitation_accepted_by_user', (data) => {
-                console.log('🎉 Mon invitation a été acceptée:', data);
-                // Redirection vers le salon
+        // ✅ GESTION D'ERREUR WEBSOCKET
+        newSocket.on('error', (error) => {
+            console.error('❌ Erreur socket:', error);
+        });
+
+        // ✅ AUTHENTIFICATION CONFIRMÉE
+        newSocket.on('authenticated', (data) => {
+            console.log('✅ Authentification réussie:', data);
+        });
+
+        // ✅ ECOUTE DES INVITATIONS
+        newSocket.on('invitation_received', (invitation) => {
+            console.log('🔔 INVITATION REÇUE VIA WEBSOCKET:', invitation);
+            setInvitations(prev => [...prev, invitation]);
+        });
+
+        // ACCEPTATION CONFIRMEE POUR CELUI QUI ACCEPTE
+        newSocket.on('invitation_accepted', (data) => {
+            console.log('✅ Mon acceptation confirmée:', data);
+            if (data.success && data.salonId) {
                 navigate(`/jeu/${data.salonId}`);
-                // Nettoyer les invitations  
+                // Nettoyer les invitations
                 setInvitations([]);
-            });
+            }
+        });
 
-            // REFUS CONFIRME POUR CELUI QUI REFUSE
-            newSocket.on('invitation_declined', (data) => {
-                console.log('❌ Mon refus confirmé:', data);
-                navigate('/dashboard');
-                setInvitations([]);
-            });
+        // QUELQU'UN ACCEPTE MON INVITATION
+        newSocket.on('invitation_accepted_by_user', (data) => {
+            console.log('🎉 Mon invitation a été acceptée:', data);
+            // Redirection vers le salon
+            navigate(`/jeu/${data.salonId}`);
+            // Nettoyer les invitations  
+            setInvitations([]);
+        });
 
-            // QUELQU4UN A REFUSE MON INVITATION
-            newSocket.on('invitation_declined_by_user', (data) => {
-                console.log('💔 Mon invitation a été refusée:', data);
-                // Rester sur la page actuelle mais nettoyer les invitations
-                setInvitations(prev => prev.filter(inv => inv.id !== data.invitationId));
+        // REFUS CONFIRME POUR CELUI QUI REFUSE
+        newSocket.on('invitation_declined', (data) => {
+            console.log('❌ Mon refus confirmé:', data);
+            navigate('/dashboard');
+            setInvitations([]);
+        });
 
-                // Optionnel : afficher une notification
-                alert(`${data.declinedBy.username} a refusé votre invitation`);
-            });
+        // QUELQU'UN A REFUSE MON INVITATION
+        newSocket.on('invitation_declined_by_user', (data) => {
+            console.log('💔 Mon invitation a été refusée:', data);
+            // Rester sur la page actuelle mais nettoyer les invitations
+            setInvitations(prev => prev.filter(inv => inv.id !== data.invitationId));
 
-            newSocket.on('user_online', ({ userId }) => {
-                setOnlineUsers(prev => [...prev, userId]);
-            });
+            // Optionnel : afficher une notification
+            alert(`${data.declinedBy.username} a refusé votre invitation`);
+        });
 
-            newSocket.on('user_offline', ({ userId }) => {
-                setOnlineUsers(prev => prev.filter(id => id !== userId));
-            });
+        newSocket.on('user_online', ({ userId }) => {
+            setOnlineUsers(prev => [...prev, userId]);
+        });
 
-            // Gestion des erreurs
-            newSocket.on('invitation_error', (data) => {
-                console.error('❌ Erreur invitation:', data);
-                alert(data.message);
-            });
+        newSocket.on('user_offline', ({ userId }) => {
+            setOnlineUsers(prev => prev.filter(id => id !== userId));
+        });
 
-            setSocket(newSocket);
+        // Gestion des erreurs
+        newSocket.on('invitation_error', (data) => {
+            console.error('❌ Erreur invitation:', data);
+            alert(data.message);
+        });
 
-            return () => {
-                console.log('🧹 Nettoyage socket...');
+        setSocket(newSocket);
+
+        // ✅ CLEANUP AMÉLIORÉ
+        return () => {
+            console.log('🧹 Nettoyage socket useEffect...');
+            if (newSocket) {
                 newSocket.removeAllListeners();
                 newSocket.disconnect();
-            };
-        }
-    }, [user, navigate]);
+            }
+        };
+
+    }, [user, loading]); // ✅ DÉPENDANCES CORRECTES
+
+    // ✅ CLEANUP AU DÉMONTAGE DU COMPOSANT
+    useEffect(() => {
+        return () => {
+            console.log('🧹 Nettoyage final SocketContext...');
+            if (socket) {
+                socket.removeAllListeners();
+                socket.disconnect();
+                setSocket(null);
+            }
+        };
+    }, []); // ✅ UNE SEULE FOIS AU DÉMONTAGE
 
     // FONCTIONS UTILITAIRES
     const sendInvitation = async (toUserId) => {
@@ -123,7 +203,7 @@ export const SocketProvider = ({ children }) => {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     },
                     body: JSON.stringify({
-                        receiverId: toUserId  // 🔥 CHANGÉ de targetUserId à receiverId
+                        receiverId: toUserId
                     })
                 });
 
@@ -158,23 +238,21 @@ export const SocketProvider = ({ children }) => {
 
     const acceptInvitation = (invitationId) => {
         console.log('🎯 FONCTION acceptInvitation appelée avec ID:', invitationId);
-        console.log('👤 USER CONTEXT:', user); // ← AJOUTE ÇA
-        console.log('👤 USER USERNAME:', user?.username); // ← ET ÇA
+        console.log('👤 USER CONTEXT:', user);
+        console.log('👤 USER USERNAME:', user?.username);
+        console.log('🔌 Socket connecté ?', socket?.connected);
 
-        if (socket && socket.connected) {
-            // ✅ FORCE L'AUTHENTIFICATION AVANT
-            if (user) {
-                console.log('🔐 Envoi authentification avant acceptation...');
-                socket.emit('authenticate', user.username);
-
-                // ✅ PETIT DÉLAI POUR L'AUTH
-                setTimeout(() => {
-                    console.log('📤 ENVOI accept_invitation vers serveur...');
-                    socket.emit('accept_invitation', { invitationId });
-                }, 100); // 100ms de délai
-            }
+        if (socket && socket.connected && user) {
+            console.log('📤 ENVOI accept_invitation vers serveur...');
+            socket.emit('accept_invitation', { 
+                invitationId,
+                userId: user.id,
+                username: user.username 
+            });
 
             setInvitations(prev => prev.filter(inv => inv.id !== invitationId));
+        } else {
+            console.error('❌ Socket non connecté ou user manquant');
         }
     };
 
@@ -184,7 +262,11 @@ export const SocketProvider = ({ children }) => {
 
         if (socket && socket.connected) {
             console.log('📤 ENVOI decline_invitation vers serveur...');
-            socket.emit('decline_invitation', { invitationId });
+            socket.emit('decline_invitation', { 
+                invitationId,
+                userId: user.id,
+                username: user.username 
+            });
 
             // ✅ Retirer immédiatement de la liste locale
             setInvitations(prev => prev.filter(inv => inv.id !== invitationId));

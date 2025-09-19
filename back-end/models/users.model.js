@@ -22,7 +22,7 @@ const usersSchema = mongoose.Schema(
         },
         role: {
             type: String,
-            enum: ['user', 'admin', 'SuperAdmin'],
+            enum: ['user', 'admin', 'superAdmin'],
             default: 'user'
         },
         isVerified: {

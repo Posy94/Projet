@@ -10,7 +10,7 @@ function Connexion() {
         formState: { errors },
     } = useForm();
 
-    const{ updateUser } = useUser();
+    const { fetchUserProfile } = useUser();
     const navigate = useNavigate();
 
     const onSubmit = async (data) => {
@@ -26,11 +26,15 @@ function Connexion() {
 
             if (result.token) {
                 localStorage.setItem('token', result.token);
+
+                console.log('🚀 Appel fetchUserProfile après login...');
+
+                await fetchUserProfile();
+
+                console.log('✅ Profil récupéré, navigation...');
+                
+                navigate('/');
             }
-
-            updateUser(result.user);
-
-            navigate('/');
 
         } catch (error) {
             console.error("Erreur complète :", error.response);

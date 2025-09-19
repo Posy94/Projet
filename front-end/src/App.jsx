@@ -19,10 +19,10 @@ import Historiques from './pages/historiques';
 import Jeu from './pages/jeu';
 import ListeSalons from './pages/listeSalons';
 import Notitfications from './pages/notifications';
-import Salon from './pages/salon';
 import Statistiques from './pages/statistiques';
 import Recompenses from './pages/recompenses';
 import WaitingRoom from './components/WaitingRoom';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import './App.css';
 
@@ -48,8 +48,15 @@ function AppContent() {
           <Route path='/connexion' element={<Connexion/>}/>
           {/* FONCTIONNALITE MULTIJOUEUR */}
           <Route path='/creationSalon' element={<CreationSalon/>}/>
-          <Route path='/listeSalons' element={<ListeSalons/>}/>
-          <Route path='/salon/:salonId' element={<Salon/>}/>
+          <Route
+            path="/listeSalons"
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'superAdmin']}>
+                <ListeSalons />
+              </ProtectedRoute>
+            }
+          />
+          {/* <Route path='/salon/:salonId' element={<Salon/>}/> */}
           <Route path='/waiting-room/:salonId' element={<WaitingRoom/>}/>
           {/* JEU */}
           <Route path='/jeu' element={<div className="text-center mt-10">
