@@ -4,7 +4,7 @@ const suivisSchema = new mongoose.Schema(
     {
         userId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'User',
+            ref: 'users',
             required: true
         },
         gameId: {
@@ -35,7 +35,7 @@ const suivisSchema = new mongoose.Schema(
             consecutiveLosses: { type: Number, default: 0 },
             isPersonalBest: { type: Boolean, default: false }
         }
-    }, { timestamp: true });
+    }, { timestamps: true });
 
     // INDEX POUR OPTIMISER LES REQUETES
     suivisSchema.index({ userId: 1, createdAt: -1 });

@@ -12,7 +12,7 @@ export const SocketProvider = ({ children }) => {
     const { user, loading } = useUser();
     const navigate = useNavigate();
 
-    // ✅ USEEFFECT PRINCIPAL CORRIGÉ
+    // USEEFFECT PRINCIPAL
     useEffect(() => {
         console.log('🔄 Socket useEffect - loading:', loading, 'user:', user?.username);
 
@@ -175,9 +175,9 @@ export const SocketProvider = ({ children }) => {
             }
         };
 
-    }, [user, loading]); // ✅ DÉPENDANCES CORRECTES
+    }, [user, loading]);
 
-    // ✅ CLEANUP AU DÉMONTAGE DU COMPOSANT
+    // CLEANUP AU DÉMONTAGE DU COMPOSANT
     useEffect(() => {
         return () => {
             console.log('🧹 Nettoyage final SocketContext...');
@@ -187,7 +187,7 @@ export const SocketProvider = ({ children }) => {
                 setSocket(null);
             }
         };
-    }, []); // ✅ UNE SEULE FOIS AU DÉMONTAGE
+    }, []); // UNE SEULE FOIS AU DÉMONTAGE
 
     // FONCTIONS UTILITAIRES
     const sendInvitation = async (toUserId) => {

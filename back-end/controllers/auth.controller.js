@@ -46,7 +46,6 @@ module.exports.register = async (req, res, next) => {
         });
 
         await user.save();
-        console.log('✅ Utilisateur créé (non activé):', email);
         
         // ENVOYER EMAIL D'ACTIVATION
         try {
@@ -63,7 +62,6 @@ module.exports.register = async (req, res, next) => {
                 }
             });
         } catch (emailError) {
-            console.error('❌ Erreur envoi email:', emailError);
 
             await UsersModel.findByIdAndDelete(user._id);
 
@@ -74,7 +72,6 @@ module.exports.register = async (req, res, next) => {
         }
         
     } catch (error) {
-        console.error('❌ Erreur inscription:', error);
         next(createError(500, error.message));
     }
 };
@@ -82,11 +79,8 @@ module.exports.register = async (req, res, next) => {
 module.exports.login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-
-        console.log('🔍 LOGIN ATTEMPT:', { email, password: password ? 'PROVIDED' : 'MISSING' });
         
         if (!email || !password) {
-            console.log('❌ Missing email or password');
             return next(createError(400, 'Email et mot de passe requis'));
         }
         

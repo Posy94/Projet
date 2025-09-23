@@ -3,7 +3,7 @@ const GameModeModal = ({ onClose, onPrivateInvite }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full">
 
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 rounded-t-2xl">
+                <div className="bg-gradient-to-r from-green-500 to-purple-600 text-white p-4 rounded-t-2xl">
                     <h2 className="text-xl font-bold text-center">Mode multijoueur</h2>
                 </div>
 

@@ -47,13 +47,13 @@ const recompenseDefinitionSchema = new mongoose.Schema(
         },
         points: {
             type: Number,
-            default: true
+            default: 0
         },
         active: {
             type: Boolean,
             default: true
         }
-    }, { timestamp: true }
+    }, { timestamps: true }
 );
 
 // SCHEMA POUR LES RECOMPENSES DEBLOQUEES PAR LES UTILISATEURS
@@ -77,7 +77,7 @@ const userRecompenseSchema = new mongoose.Schema({
         min: 0,
         max: 1
     }
-}, { timestamp: true }
+}, { timestamps: true }
 );
 
 // INDEX POUR EVITER LES DOUBLONS

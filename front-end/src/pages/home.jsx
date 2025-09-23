@@ -146,7 +146,7 @@ const Home = () => {
                     </div>
 
                     {creatingGame && (
-                        <div className="mt-6 flex items-center justify-center space-x-2 text-blue-600">
+                        <div className="mt-6 flex items-center justify-center space-x-2 text-purple-600">
                             <LoadingSpinner />
                             <span>Création de la partie...</span>
                         </div>

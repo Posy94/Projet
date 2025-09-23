@@ -8,18 +8,13 @@ import Layout from './components/Layout/Layout';
 import Home from './pages/home';
 import Regles from './pages/regles';
 import Inscription from './pages/inscription';
-import ProfilJoueur from './pages/profilJoueur';
 import Connexion from './pages/connexion';
-import CreationSalon from './pages/creationSalon';
 import Cgu from './pages/cgu';
 import APropos from './pages/aPropos';
 import Contact from './pages/contact';
 import Classements from './pages/classements';
-import Historiques from './pages/historiques';
 import Jeu from './pages/jeu';
 import ListeSalons from './pages/listeSalons';
-import Notitfications from './pages/notifications';
-import Statistiques from './pages/statistiques';
 import Recompenses from './pages/recompenses';
 import WaitingRoom from './components/WaitingRoom';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -42,34 +37,21 @@ function AppContent() {
           <Route path='/cgu' element={<Cgu/>}/>
           <Route path='/apropos' element={<APropos/>}/>
           {/* PAGES UTILISATEUR */}
-          <Route path='/notifications' element={<Notitfications/>}/>
-          <Route path='/profiljoueur' element={<ProfilJoueur/>}/>
           <Route path='/inscription' element={<Inscription/>}/>
           <Route path='/connexion' element={<Connexion/>}/>
-          {/* FONCTIONNALITE MULTIJOUEUR */}
-          <Route path='/creationSalon' element={<CreationSalon/>}/>
-          <Route
-            path="/listeSalons"
+          {/* PAGES ADMINISTRATION */}
+          <Route path="/listeSalons"
             element={
               <ProtectedRoute allowedRoles={['admin', 'superAdmin']}>
                 <ListeSalons />
               </ProtectedRoute>
             }
           />
-          {/* <Route path='/salon/:salonId' element={<Salon/>}/> */}
           <Route path='/waiting-room/:salonId' element={<WaitingRoom/>}/>
           {/* JEU */}
-          <Route path='/jeu' element={<div className="text-center mt-10">
-            <h2>Sélectionnez un salon pour jouer</h2>
-            <Link to="/listeSalons" className="text-blue-500 underline">
-              Voir la liste des salons
-            </Link>
-          </div>}/>
           <Route path='/jeu/:salonId' element={<Jeu user={user}/>}/>
           {/* CONTENU POST-JEU */}
           <Route path='/classements' element={<Classements/>}/>
-          <Route path='/historiques' element={<Historiques/>}/>
-          <Route path='/statistiques' element={<Statistiques/>}/>
           <Route path='/recompenses' element={<Recompenses/>}/>
         </Route>
       </Routes>

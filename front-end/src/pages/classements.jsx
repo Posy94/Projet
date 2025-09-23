@@ -4,7 +4,7 @@ function Classements() {
     const [classements, setClassements] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [sortBy, setSortBy] = useState('wins'); // wins, ratio, gamesPlayed
+    const [sortBy, setSortBy] = useState('wins');
     const [currentUser, setCurrentUser] = useState(null);
     
     // 🎯 RÉCUPÉRATION DES DONNÉES
